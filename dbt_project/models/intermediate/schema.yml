@@ -1,0 +1,36 @@
+version: 2
+
+models:
+  - name: int_flights_near_airport
+    description: "Flights matched to airport zones within influence radius"
+    columns:
+      - name: icao24
+        tests:
+          - not_null
+      - name: airport_icao
+        tests:
+          - not_null
+
+  - name: int_flight_phases
+    description: "Flight events with computed flight phase categories"
+    columns:
+      - name: icao24
+        tests:
+          - not_null
+      - name: computed_flight_phase
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['on_ground', 'takeoff', 'climb', 'cruise', 'descent', 'approach', 'landing', 'unknown']
+
+  - name: int_weather_hourly
+    description: "Hourly weather readings with calculated severity levels"
+    columns:
+      - name: airport_icao
+        tests:
+          - not_null
+      - name: weather_severity
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['favorable', 'moderate', 'severe']

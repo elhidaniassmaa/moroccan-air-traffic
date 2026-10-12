@@ -1,0 +1,23 @@
+moroccan_air_traffic:
+  target: ci
+  outputs:
+    dev:
+      type: duckdb
+      path: "{{ env_var('DUCKDB_PATH', '../data/analytics.duckdb') }}"
+      threads: 4
+      extensions:
+        - parquet
+        - httpfs
+
+    ci:
+      type: duckdb
+      path: "{{ env_var('DUCKDB_PATH', ':memory:') }}"
+      threads: 2
+
+    prod:
+      type: duckdb
+      path: "{{ env_var('DUCKDB_PATH', '/data/analytics.duckdb') }}"
+      threads: 4
+      extensions:
+        - parquet
+        - httpfs

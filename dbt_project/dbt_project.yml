@@ -1,0 +1,49 @@
+name: 'moroccan_air_traffic'
+version: '1.0.0'
+config-version: 2
+
+profile: 'moroccan_air_traffic'
+
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+seeds:
+  moroccan_air_traffic:
+    +schema: seeds
+    airports:
+      +column_types:
+        latitude: double
+        longitude: double
+        elevation_m: integer
+        influence_radius_km: integer
+    airlines:
+      +column_types:
+        is_moroccan: boolean
+    calendar_events:
+      +column_types:
+        start_date: date
+        end_date: date
+
+models:
+  moroccan_air_traffic:
+    staging:
+      +materialized: view
+      +schema: staging
+    intermediate:
+      +materialized: view
+      +schema: intermediate
+    marts:
+      +materialized: table
+      +schema: marts
+      fct_airport_movements_hourly:
+        +materialized: incremental
+        +unique_key: "movement_hour_id"
+        +incremental_strategy: "delete+insert"
