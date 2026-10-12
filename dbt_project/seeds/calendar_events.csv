@@ -1,0 +1,24 @@
+event_name,event_type,start_date,end_date,notes
+Ramadan 2024,religious,2024-03-11,2024-04-09,Dates approximate — based on lunar calendar. Verify with official announcement.
+Aïd al-Fitr 2024,religious,2024-04-10,2024-04-12,End of Ramadan. Dates approximate.
+Aïd al-Adha 2024,religious,2024-06-17,2024-06-19,Dates approximate — based on lunar calendar.
+Ramadan 2025,religious,2025-02-28,2025-03-29,Dates approximate — based on lunar calendar. Verify with official announcement.
+Aïd al-Fitr 2025,religious,2025-03-30,2025-04-01,End of Ramadan. Dates approximate.
+Aïd al-Adha 2025,religious,2025-06-06,2025-06-08,Dates approximate — based on lunar calendar.
+Ramadan 2026,religious,2026-02-17,2026-03-18,Dates approximate — based on lunar calendar. Verify with official announcement.
+Aïd al-Fitr 2026,religious,2026-03-19,2026-03-21,End of Ramadan. Dates approximate.
+Aïd al-Adha 2026,religious,2026-05-27,2026-05-29,Dates approximate — based on lunar calendar.
+Vacances été 2024,school_holiday,2024-07-01,2024-08-31,Morocco school summer break. Dates to verify with ministry.
+Vacances été 2025,school_holiday,2025-07-01,2025-08-31,Morocco school summer break. Dates to verify with ministry.
+Vacances été 2026,school_holiday,2026-07-01,2026-08-31,Morocco school summer break. Dates to verify with ministry.
+Vacances hiver 2024,school_holiday,2024-12-21,2025-01-05,Winter break. Dates to verify.
+Vacances hiver 2025,school_holiday,2025-12-20,2026-01-04,Winter break. Dates to verify.
+Vacances printemps 2025,school_holiday,2025-04-05,2025-04-20,Spring break. Dates to verify.
+Vacances printemps 2026,school_holiday,2026-04-04,2026-04-19,Spring break. Dates to verify.
+Nouvel An,national_holiday,2025-01-01,2025-01-01,New Year's Day
+Fête du Trône 2025,national_holiday,2025-07-30,2025-07-30,Throne Day — major national holiday
+Fête de l'Indépendance 2025,national_holiday,2025-11-18,2025-11-18,Independence Day
+Marche Verte 2025,national_holiday,2025-11-06,2025-11-06,Green March anniversary
+Mondial 2030 — phase de groupes,mega_event,2030-06-13,2030-07-01,FIFA World Cup 2030 group stage (Morocco co-host). Dates speculative — verify when FIFA publishes schedule.
+Mondial 2030 — phases finales,mega_event,2030-07-02,2030-07-21,FIFA World Cup 2030 knockout rounds. Dates speculative.
+CAN 2025,mega_event,2025-12-21,2026-01-18,Africa Cup of Nations 2025 hosted by Morocco. Dates to verify with CAF.
