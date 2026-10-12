@@ -1,0 +1,109 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moroccan-air-traffic/schemas/flight_event.json",
+  "title": "FlightEvent",
+  "description": "A single aircraft state vector captured from OpenSky Network, enriched with ingestion metadata. This is the contract for messages on the flights.raw Kafka topic.",
+  "type": "object",
+  "required": [
+    "icao24",
+    "time_position",
+    "longitude",
+    "latitude",
+    "on_ground",
+    "ingestion_ts"
+  ],
+  "properties": {
+    "icao24": {
+      "type": "string",
+      "description": "Unique ICAO 24-bit transponder address (hex, lowercase).",
+      "pattern": "^[0-9a-f]{6}$"
+    },
+    "callsign": {
+      "type": ["string", "null"],
+      "description": "Callsign of the aircraft (8 chars max). Null if not available.",
+      "maxLength": 8
+    },
+    "origin_country": {
+      "type": "string",
+      "description": "Country of origin inferred from ICAO address."
+    },
+    "time_position": {
+      "type": "integer",
+      "description": "Unix timestamp (seconds) of the last position update.",
+      "minimum": 0
+    },
+    "last_contact": {
+      "type": "integer",
+      "description": "Unix timestamp (seconds) of the last contact with the aircraft.",
+      "minimum": 0
+    },
+    "longitude": {
+      "type": "number",
+      "description": "WGS-84 longitude in decimal degrees.",
+      "minimum": -180,
+      "maximum": 180
+    },
+    "latitude": {
+      "type": "number",
+      "description": "WGS-84 latitude in decimal degrees.",
+      "minimum": -90,
+      "maximum": 90
+    },
+    "baro_altitude": {
+      "type": ["number", "null"],
+      "description": "Barometric altitude in meters. Null if not available."
+    },
+    "velocity": {
+      "type": ["number", "null"],
+      "description": "Ground speed in m/s. Null if not available.",
+      "minimum": 0
+    },
+    "true_track": {
+      "type": ["number", "null"],
+      "description": "True track (heading) in decimal degrees clockwise from north (0-360). Null if not available.",
+      "minimum": 0,
+      "maximum": 360
+    },
+    "vertical_rate": {
+      "type": ["number", "null"],
+      "description": "Vertical rate in m/s. Positive = climbing, negative = descending. Null if not available."
+    },
+    "geo_altitude": {
+      "type": ["number", "null"],
+      "description": "Geometric (GPS) altitude in meters. Null if not available."
+    },
+    "squawk": {
+      "type": ["string", "null"],
+      "description": "Transponder squawk code. Null if not available.",
+      "pattern": "^[0-7]{4}$"
+    },
+    "spi": {
+      "type": "boolean",
+      "description": "Whether the Special Purpose Indicator bit is set."
+    },
+    "position_source": {
+      "type": "integer",
+      "description": "Origin of the position: 0 = ADS-B, 1 = ASTERIX, 2 = MLAT, 3 = FLARM.",
+      "enum": [0, 1, 2, 3]
+    },
+    "on_ground": {
+      "type": "boolean",
+      "description": "Whether the aircraft is on the ground."
+    },
+    "category": {
+      "type": ["integer", "null"],
+      "description": "Aircraft category (0-20). Null if unavailable."
+    },
+    "ingestion_ts": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 UTC timestamp of when this message was produced to Kafka."
+    },
+    "event_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date partition key (YYYY-MM-DD) derived from time_position."
+    }
+  },
+  "additionalProperties": false
+}
