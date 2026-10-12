@@ -9,7 +9,12 @@ Outputs real values to avoid fabricated numbers in README.
 
 from __future__ import annotations
 
+import sys
 import time
+from pathlib import Path
+
+# Add project root to path
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from ingestion.producers.opensky_producer import SyntheticGenerator, validate_event
 
@@ -44,7 +49,7 @@ def measure_producer_throughput(samples: int = 200) -> dict[str, float]:
 
 def main() -> None:
     """Run metrics measurement and print verified figures."""
-    print("⏱️  Measuring local pipeline performance...")  # noqa: T201
+    print("[*] Measuring local pipeline performance...")  # noqa: T201
     metrics = measure_producer_throughput()
     print("\n--- Pipeline Verified Metrics ---")  # noqa: T201
     for k, v in metrics.items():
