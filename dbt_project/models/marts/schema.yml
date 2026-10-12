@@ -1,0 +1,104 @@
+version: 2
+
+models:
+  - name: dim_airport
+    description: "Airport dimension model containing Casablanca (CMN), Marrakech (RAK), Rabat (RBA), Agadir (AGA), Tangier (TNG)"
+    tags: ["ci"]
+    columns:
+      - name: airport_icao
+        description: "ICAO airport code (e.g., GMMN)"
+        tests:
+          - unique
+          - not_null
+      - name: airport_iata
+        description: "IATA airport code (e.g., CMN)"
+        tests:
+          - unique
+          - not_null
+      - name: latitude
+        description: "Airport latitude in WGS84"
+        tests:
+          - not_null
+          - assert_valid_latitude
+
+  - name: dim_airline
+    description: "Airline dimension matching callsign prefixes to international airline metadata"
+    tags: ["ci"]
+    columns:
+      - name: callsign_prefix
+        description: "3-letter ICAO callsign prefix"
+        tests:
+          - unique
+          - not_null
+
+  - name: dim_date
+    description: "Date dimension enriched with Moroccan religious holidays, school vacations, and mega-events"
+    tags: ["ci"]
+    columns:
+      - name: date_day
+        description: "Calendar date"
+        tests:
+          - unique
+          - not_null
+
+  - name: fct_airport_movements_hourly
+    description: "Hourly movements and traffic proxies aggregated per airport"
+    tags: ["ci"]
+    columns:
+      - name: movement_hour_id
+        description: "Surrogate key composed of airport, date and hour"
+        tests:
+          - unique
+          - not_null
+      - name: airport_icao
+        description: "Foreign key to dim_airport"
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_airport')
+              field: airport_icao
+      - name: distinct_aircraft_count
+        description: "Count of unique aircraft tracked within airport influence zone in that hour"
+        tests:
+          - not_null
+
+  - name: fct_traffic_density
+    description: "Spatial traffic density aggregated by 1-degree geographic tiles"
+    tags: ["ci"]
+    columns:
+      - name: grid_hour_id
+        description: "Surrogate primary key"
+        tests:
+          - unique
+          - not_null
+
+  - name: mart_traffic_weather_impact
+    description: "Consolidated analytical mart correlating airport traffic with weather severity and holiday periods"
+    tags: ["ci"]
+    columns:
+      - name: movement_hour_id
+        description: "Primary key linked to hourly movements"
+        tests:
+          - unique
+          - not_null
+      - name: airport_icao
+        tests:
+          - not_null
+      - name: weather_severity
+        tests:
+          - accepted_values:
+              values: ['favorable', 'moderate', 'severe']
+
+exposures:
+  - name: air_traffic_streamlit_dashboard
+    type: dashboard
+    maturity: high
+    description: "Streamlit executive & operational dashboard for Moroccan air traffic monitoring"
+    owner:
+      name: "Data Platform Team"
+      email: "data@moroccan-traffic.ma"
+    depends_on:
+      - ref('mart_traffic_weather_impact')
+      - ref('fct_traffic_density')
+      - ref('fct_airport_movements_hourly')
+      - ref('dim_airport')

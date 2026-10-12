@@ -1,0 +1,7 @@
+icao24,callsign,origin_country,time_position,last_contact,longitude,latitude,baro_altitude,on_ground,velocity,true_track,vertical_rate,geo_altitude,squawk,spi,position_source,category,nearest_airport_icao,nearest_airport_iata,distance_to_airport_km,flight_phase,event_date,ingestion_ts
+c00001,RAM101,Morocco,1736935200,1736935200,-7.60,33.37,150.0,false,75.0,200.0,8.0,180.0,7000,false,0,4,GMMN,CMN,1.5,takeoff,2025-01-15,2025-01-15T10:00:00Z
+c00002,RAM202,Morocco,1736935200,1736935200,-8.04,31.61,480.0,true,10.0,180.0,0.0,490.0,1000,false,0,4,GMMX,RAK,0.8,on_ground,2025-01-15,2025-01-15T10:00:00Z
+c00003,AFR150,France,1736935200,1736935200,-6.76,34.06,1200.0,false,110.0,45.0,-4.5,1250.0,3450,false,0,4,GMME,RBA,2.1,approach,2025-01-15,2025-01-15T10:00:00Z
+c00004,RYR888,Ireland,1736935200,1736935200,-9.42,30.33,90.0,false,55.0,90.0,-1.5,95.0,5200,false,0,4,GMAD,AGA,1.0,landing,2025-01-15,2025-01-15T10:00:00Z
+c00005,IBE301,Spain,1736935200,1736935200,-5.92,35.73,9500.0,false,240.0,190.0,0.0,9800.0,4100,false,0,4,GMTT,TNG,3.5,cruise,2025-01-15,2025-01-15T10:00:00Z
+c00006,RAM999,Morocco,1736938800,1736938800,-7.58,33.36,3500.0,false,180.0,210.0,6.0,3600.0,7000,false,0,4,GMMN,CMN,3.0,climb,2025-01-15,2025-01-15T11:00:00Z

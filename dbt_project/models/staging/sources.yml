@@ -1,0 +1,14 @@
+version: 2
+
+sources:
+  - name: data_lake
+    description: "Parquet extracts and Lakehouse data"
+    tables:
+      - name: raw_weather
+        description: "Hourly weather observations and forecasts from Open-Meteo"
+        meta:
+          external_location: "read_parquet('../data/lake/raw/weather/**/*.parquet')"
+      - name: silver_flights
+        description: "Enriched flight events from Delta/Parquet lake"
+        meta:
+          external_location: "read_parquet('../data/lake/silver/flights/**/*.parquet')"

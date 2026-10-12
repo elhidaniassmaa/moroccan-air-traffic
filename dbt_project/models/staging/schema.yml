@@ -1,0 +1,48 @@
+version: 2
+
+models:
+  - name: stg_airports
+    description: "Staged airport metadata with elevation in feet"
+    columns:
+      - name: airport_icao
+        tests:
+          - unique
+          - not_null
+      - name: airport_iata
+        tests:
+          - unique
+          - not_null
+
+  - name: stg_airlines
+    description: "Staged airline registry mapping callsigns to companies"
+    columns:
+      - name: callsign_prefix
+        tests:
+          - unique
+          - not_null
+
+  - name: stg_weather
+    description: "Hourly weather observations staged and deduplicated"
+    columns:
+      - name: airport_icao
+        tests:
+          - not_null
+      - name: observation_ts
+        tests:
+          - not_null
+
+  - name: stg_flights
+    description: "Staged cleaned aircraft positional data with metric & imperial conversions"
+    columns:
+      - name: icao24
+        tests:
+          - not_null
+      - name: position_ts
+        tests:
+          - not_null
+      - name: latitude
+        tests:
+          - not_null
+      - name: longitude
+        tests:
+          - not_null
