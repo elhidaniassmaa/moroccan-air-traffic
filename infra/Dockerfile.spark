@@ -1,0 +1,25 @@
+# ─────────────────────────────────────────────────────────────
+# Dockerfile for Spark Streaming (Bronze & Silver)
+# ─────────────────────────────────────────────────────────────
+FROM bitnami/spark:3.5.1
+
+USER root
+
+WORKDIR /app
+
+# Install python dependencies for streaming helpers
+COPY requirements-streaming.txt .
+RUN pip install --no-cache-dir -r requirements-streaming.txt
+
+# Download Maven packages needed by Spark Structured Streaming
+# Aligned versions:
+# - PySpark 3.5.1
+# - spark-sql-kafka-0-10_2.12:3.5.1
+# - delta-spark_2.12:3.1.0
+ENV SPARK_PACKAGES="org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.1,io.delta:delta-spark_2.12:3.1.0"
+
+COPY streaming/ ./streaming/
+
+USER 1001
+
+ENTRYPOINT ["spark-submit", "--packages", "org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.1,io.delta:delta-spark_2.12:3.1.0"]
