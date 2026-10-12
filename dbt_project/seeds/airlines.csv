@@ -1,0 +1,19 @@
+callsign_prefix,airline_icao,airline_iata,airline_name,country,is_moroccan
+RAM,RAM,AT,Royal Air Maroc,Morocco,true
+MAC,MAC,,Air Arabia Maroc,Morocco,true
+JTG,JTG,,Jetairfly (TUI fly Belgium — Morocco routes),Belgium,false
+MAP,MAP,,Royal Air Maroc Express,Morocco,true
+RYR,RYR,FR,Ryanair,Ireland,false
+EZY,EZY,U2,easyJet,United Kingdom,false
+AFR,AFR,AF,Air France,France,false
+BAW,BAW,BA,British Airways,United Kingdom,false
+IBE,IBE,IB,Iberia,Spain,false
+TAR,TAR,AH,Air Algérie,Algeria,false
+TSC,TSC,TS,Air Transat,Canada,false
+WZZ,WZZ,W6,Wizz Air,Hungary,false
+TVF,TVF,TO,Transavia France,France,false
+VLG,VLG,VY,Vueling,Spain,false
+THA,THA,TK,Turkish Airlines,Turkey,false
+QTR,QTR,QR,Qatar Airways,Qatar,false
+UAE,UAE,EK,Emirates,United Arab Emirates,false
+ETH,ETH,ET,Ethiopian Airlines,Ethiopia,false

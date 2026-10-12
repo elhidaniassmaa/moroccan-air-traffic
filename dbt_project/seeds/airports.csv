@@ -1,0 +1,6 @@
+airport_icao,airport_iata,airport_name,city,country,latitude,longitude,elevation_m,influence_radius_km
+GMMN,CMN,Mohammed V International,Casablanca,Morocco,33.3675,-7.5900,200,50
+GMMX,RAK,Menara,Marrakech,Morocco,31.6069,-8.0363,466,45
+GMME,RBA,Rabat-Salé,Rabat,Morocco,34.0515,-6.7515,84,40
+GMAD,AGA,Al Massira,Agadir,Morocco,30.3250,-9.4131,23,45
+GMTT,TNG,Ibn Battouta,Tangier,Morocco,35.7269,-5.9169,19,40
