@@ -1,11 +1,3 @@
-# ─────────────────────────────────────────────────────────────
-# Moroccan Air Traffic Streaming Platform — Docker Compose
-# Architecture:
-# - Streaming: Redpanda + Console + Producer + Spark Streaming
-# - Storage: Lakehouse Delta Lake & Parquet
-# - Orchestration: Apache Airflow (Postgres + LocalExecutor)
-# Usage: docker compose up -d --build
-# ─────────────────────────────────────────────────────────────
 name: moroccan-air-traffic
 
 x-airflow-common: &airflow-common
@@ -29,7 +21,8 @@ x-airflow-common: &airflow-common
       condition: service_healthy
 
 services:
-  # ── Redpanda (Kafka-compatible streaming broker) ───────────
+
+  # Redpanda (Kafka-compatible streaming broker)
   redpanda:
     image: docker.redpanda.com/redpandadata/redpanda:v24.1.1
     container_name: redpanda
@@ -47,9 +40,9 @@ services:
       - --smp 1
       - --default-log-level=warn
     ports:
-      - "19092:19092"   # Kafka external
-      - "18082:18082"   # Pandaproxy
-      - "18081:18081"   # Schema Registry
+      - "19092:19092"
+      - "18082:18082"
+      - "18081:18081"
     volumes:
       - redpanda_data:/var/lib/redpanda/data
     healthcheck:
@@ -58,9 +51,9 @@ services:
       timeout: 5s
       retries: 10
 
-  # ── Redpanda Console (Kafka UI) ────────────────────────────
+  # Redpanda Console (Kafka UI) - port 8080
   redpanda-console:
-    image: docker.redpandadata.com/redpandadata/console:v2.4.6
+    image: docker.redpanda.com/redpandadata/console:v2.4.6
     container_name: redpanda-console
     depends_on:
       redpanda:
@@ -72,7 +65,7 @@ services:
     ports:
       - "8080:8080"
 
-  # ── Topic Initializer ──────────────────────────────────────
+  # Topic initializer (creates flights.raw and flights.dlq)
   init-topics:
     image: docker.redpanda.com/redpandadata/redpanda:v24.1.1
     container_name: init-topics
@@ -82,7 +75,6 @@ services:
     entrypoint: /bin/bash
     command: |
       -c "
-      echo 'Creating topics...'
       rpk topic create flights.raw \
         --brokers redpanda:9092 \
         --partitions 3 \
@@ -92,12 +84,11 @@ services:
         --brokers redpanda:9092 \
         --partitions 1 \
         --config cleanup.policy=compact || true
-      echo 'Topics created.'
       rpk topic list --brokers redpanda:9092
       "
     restart: "no"
 
-  # ── OpenSky Producer (OAuth2 + Synthetic) ──────────────────
+  # OpenSky Producer (OAuth2 + Synthetic replay mode)
   opensky-producer:
     build:
       context: .
@@ -112,7 +103,8 @@ services:
       KAFKA_BOOTSTRAP_SERVERS: redpanda:9092
     restart: unless-stopped
 
-  # ── Spark Streaming: Bronze Layer ──────────────────────────
+  # Spark Structured Streaming - Bronze layer
+  # Reads flights.raw, deduplicates on (icao24, time_position), watermark 10 min, writes Delta Lake
   spark-bronze:
     build:
       context: .
@@ -128,10 +120,12 @@ services:
       BRONZE_CHECKPOINT_PATH: /app/data/checkpoints/bronze_flights
     volumes:
       - ./data:/app/data
+      - ./streaming:/app/streaming
     command: ["streaming/flights_bronze_stream.py"]
     restart: unless-stopped
 
-  # ── Spark Streaming: Silver Layer ──────────────────────────
+  # Spark Structured Streaming - Silver layer
+  # Reads Bronze Delta Lake, enriches with haversine + flight phase heuristics, writes Silver Delta Lake
   spark-silver:
     build:
       context: .
@@ -146,10 +140,11 @@ services:
       SILVER_CHECKPOINT_PATH: /app/data/checkpoints/silver_flights
     volumes:
       - ./data:/app/data
+      - ./streaming:/app/streaming
     command: ["streaming/flights_silver_stream.py"]
     restart: unless-stopped
 
-  # ── Metadata DB for Airflow (PostgreSQL) ───────────────────
+  # PostgreSQL - Airflow metadata database
   postgres:
     image: postgres:15-alpine
     container_name: postgres
@@ -165,13 +160,10 @@ services:
       retries: 5
     restart: always
 
-  # ── Airflow Database Init ──────────────────────────────────
+  # Airflow Init (creates DB schema + admin user admin/admin)
   airflow-init:
     <<: *airflow-common
     container_name: airflow-init
-    command: version
-    environment:
-      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
     entrypoint: /bin/bash
     command:
       - -c
@@ -186,7 +178,7 @@ services:
           --email admin@moroccan-traffic.ma || true
     restart: "no"
 
-  # ── Airflow Webserver (UI) ─────────────────────────────────
+  # Airflow Webserver (UI on port 8085)
   airflow-webserver:
     <<: *airflow-common
     container_name: airflow-webserver
@@ -198,7 +190,7 @@ services:
         condition: service_completed_successfully
     restart: always
 
-  # ── Airflow Scheduler (LocalExecutor) ──────────────────────
+  # Airflow Scheduler (LocalExecutor - runs weather_daily and dbt_hourly DAGs)
   airflow-scheduler:
     <<: *airflow-common
     container_name: airflow-scheduler
@@ -208,7 +200,7 @@ services:
         condition: service_completed_successfully
     restart: always
 
-  # ── Streamlit Analytics Dashboard ──────────────────────────
+  # Streamlit Dashboard (port 8501)
   dashboard:
     image: python:3.11-slim
     container_name: dashboard
