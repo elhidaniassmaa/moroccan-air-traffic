@@ -150,7 +150,7 @@ def load_flight_data() -> tuple[pd.DataFrame, bool]:
                 callsign,
                 latitude AS lat,
                 longitude AS lon,
-                baro_altitude_m AS altitude_m,
+                coalesce(baro_altitude, 0) AS altitude_m,
                 velocity_kmh AS speed_kmh,
                 flight_phase AS phase,
                 coalesce(nearest_airport_iata, 'En vol') AS nearest_airport
@@ -162,8 +162,8 @@ def load_flight_data() -> tuple[pd.DataFrame, bool]:
         df = pd.read_sql(query, engine)
         if not df.empty:
             return df, True
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"[Dashboard] Error querying silver_flights: {e}")
     return generate_synthetic_flights(), False
 
 
