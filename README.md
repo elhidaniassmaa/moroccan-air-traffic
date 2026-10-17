@@ -1,6 +1,5 @@
 # Moroccan Air Traffic Streaming Platform 
 
-![CI Quality & Data Tests](https://github.com/your-org/moroccan-air-traffic/actions/workflows/ci.yml/badge.svg)
 ![Python 3.11](https://img.shields.io/badge/python-3.11-blue.svg)
 ![Kafka](https://img.shields.io/badge/streaming-Apache%20Kafka%203.6%20%2B%20ZooKeeper-orange.svg)
 ![Spark](https://img.shields.io/badge/processing-Spark%203.5.1%20%2B%20Delta%203.1.0-red.svg)
