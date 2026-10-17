@@ -32,7 +32,7 @@ Le système ingère les trajectoires de vol, les normalise dans un Lakehouse Del
 La plateforme est conçue pour analyser comment le trafic aérien au-dessus du Maroc interagit avec :
 - Les conditions météorologiques défavorables (vents violents, rafales > 50 km/h, visibilité < 2 km, précipitations) via l'API Open-Meteo.
 - Les cycles calendaires et religieux (Ramadan, Aïd al-Fitr, départs estivaux des MRE).
-- Les méga-événements sportifs majeurs (Coupe du Monde FIFA 2030).
+- Les méga-évènements sportifs majeurs (Coupe du Monde FIFA 2030).
 
 > ℹ️ **Périmètre temporel et transparence des données :**
 > - Données de vol actives : collecte en direct depuis octobre 2026.
@@ -115,7 +115,7 @@ flowchart TD
 ```bash
 cp .env.example .env
 ```
-*Par défaut, `PRODUCER_SYNTHETIC_MODE=true` permet de démarrer sans clé d'API. Renseignez vos identifiants OpenSky dans `.env` et passez `PRODUCER_SYNTHETIC_MODE=false` pour consommer les vols en direct.*
+*Par défaut, `PRODUCER_SYNTHETIC_MODE=true` permet de démarrer sans clé d'API. Ajoutez vos identifiants OpenSky dans `.env` et passez `PRODUCER_SYNTHETIC_MODE=false` pour consommer les vols en direct.*
 
 ### 2. Démarrage de l'Infrastructure
 ```bash
