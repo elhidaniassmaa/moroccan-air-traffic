@@ -10,8 +10,6 @@ from __future__ import annotations
 
 import logging
 import os
-import sys
-from pathlib import Path
 
 logging.basicConfig(
     level=logging.INFO,
@@ -23,8 +21,8 @@ logger = logging.getLogger("silver_to_postgres")
 def sync_silver_to_postgres() -> int:
     """Synchronise la couche Silver vers PostgreSQL Warehouse."""
     import psycopg2
-    from psycopg2.extras import execute_batch
     import pyarrow.dataset as ds
+    from psycopg2.extras import execute_batch
 
     lake_dir = os.getenv("DELTA_SILVER_PATH", "/opt/airflow/data/lake/silver/flights")
     if not os.path.exists(lake_dir):

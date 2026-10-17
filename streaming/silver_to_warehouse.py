@@ -19,11 +19,9 @@ from __future__ import annotations
 
 import logging
 import os
-import sys
-from datetime import datetime
 
 from pyspark.sql import SparkSession
-from pyspark.sql import functions as F
+from pyspark.sql import functions as f
 from pyspark.sql.window import Window
 
 logging.basicConfig(
@@ -73,11 +71,11 @@ def load_silver_to_postgres() -> int:
 
     # Déduplication finale par icao24 et position_ts (au cas où)
     window_spec = Window.partitionBy("icao24", "time_position").orderBy(
-        F.col("ingestion_ts").desc()
+        f.col("ingestion_ts").desc()
     )
     deduped_df = (
-        silver_df.withColumn("row_num", F.row_number().over(window_spec))
-        .filter(F.col("row_num") == 1)
+        silver_df.withColumn("row_num", f.row_number().over(window_spec))
+        .filter(f.col("row_num") == 1)
         .drop("row_num")
     )
 

@@ -145,7 +145,7 @@ def load_flight_data() -> tuple[pd.DataFrame, bool]:
     try:
         engine = get_db_engine()
         query = """
-            SELECT 
+            SELECT
                 icao24,
                 callsign,
                 latitude AS lat,
@@ -173,7 +173,7 @@ def load_hourly_traffic() -> tuple[pd.DataFrame, bool]:
     try:
         engine = get_db_engine()
         query = """
-            SELECT 
+            SELECT
                 movement_date AS date,
                 movement_hour AS hour,
                 airport_iata AS airport,
@@ -200,7 +200,7 @@ def load_hourly_traffic() -> tuple[pd.DataFrame, bool]:
 st.title("🇲🇦 Moroccan Air Traffic Streaming Platform")
 st.markdown(
     """
-    **Plateforme Data Engineering temps réel & analytique**  
+    **Plateforme Data Engineering temps réel & analytique**
     Ingestion OpenSky (OAuth2 / Apache Kafka) ➔ Spark Structured Streaming ➔ Delta Lake (Bronze/Silver) ➔ Data Warehouse PostgreSQL (Kimball via dbt)
     """
 )
