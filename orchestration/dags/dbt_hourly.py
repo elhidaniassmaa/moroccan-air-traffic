@@ -57,7 +57,6 @@ with DAG(
     max_active_runs=1,
     tags=["dbt", "incremental", "warehouse", "postgres"],
 ) as dag:
-
     task_silver_to_warehouse = PythonOperator(
         task_id="silver_to_warehouse",
         python_callable=run_silver_to_warehouse,

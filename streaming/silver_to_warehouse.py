@@ -44,7 +44,9 @@ def get_spark_session() -> SparkSession:
     return (
         SparkSession.builder.appName("MoroccanAirTraffic-SilverToWarehouse")
         .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension")
-        .config("spark.sql.catalog.spark_catalog", "org.apache.spark.sql.delta.catalog.DeltaCatalog")
+        .config(
+            "spark.sql.catalog.spark_catalog", "org.apache.spark.sql.delta.catalog.DeltaCatalog"
+        )
         .getOrCreate()
     )
 
@@ -97,7 +99,9 @@ def load_silver_to_postgres() -> int:
         .save()
     )
 
-    logger.info("Succès : %d enregistrements insérés dans %s.%s", total_records, WAREHOUSE_DB, target_table)
+    logger.info(
+        "Succès : %d enregistrements insérés dans %s.%s", total_records, WAREHOUSE_DB, target_table
+    )
     return total_records
 
 

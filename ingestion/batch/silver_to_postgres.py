@@ -123,7 +123,9 @@ def sync_silver_to_postgres() -> int:
     cur.close()
     conn.close()
 
-    logger.info("Synchronisation terminée : %d lignes insérées dans silver_flights", len(rows_to_insert))
+    logger.info(
+        "Synchronisation terminée : %d lignes insérées dans silver_flights", len(rows_to_insert)
+    )
     return len(rows_to_insert)
 
 

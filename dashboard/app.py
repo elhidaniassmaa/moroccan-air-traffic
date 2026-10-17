@@ -209,9 +209,13 @@ df_flights, is_real_flights = load_flight_data()
 df_hourly, is_real_hourly = load_hourly_traffic()
 
 if is_real_flights:
-    st.success(f"✅ Données de vol en direct connectées à PostgreSQL Warehouse ({len(df_flights)} positions affichées)")
+    st.success(
+        f"✅ Données de vol en direct connectées à PostgreSQL Warehouse ({len(df_flights)} positions affichées)"
+    )
 else:
-    st.info("ℹ️ Entrepôt PostgreSQL en cours de chargement initial. Affichage des données de simulation.")
+    st.info(
+        "ℹ️ Entrepôt PostgreSQL en cours de chargement initial. Affichage des données de simulation."
+    )
 
 st.sidebar.header("🕹️ Filtres & Paramètres")
 selected_airport = st.sidebar.selectbox(
@@ -225,14 +229,26 @@ show_3d_arcs = st.sidebar.checkbox("Activer l'affichage 3D (Pydeck)", value=True
 
 col1, col2, col3, col4 = st.columns(4)
 with col1:
-    st.metric("Avions en vol surveillés", f"{len(df_flights)}", delta="Temps réel" if is_real_flights else "Simulation")
+    st.metric(
+        "Avions en vol surveillés",
+        f"{len(df_flights)}",
+        delta="Temps réel" if is_real_flights else "Simulation",
+    )
 with col2:
     st.metric("Aéroports actifs", f"{len(AIRPORTS)}", "Hubs clés")
 with col3:
-    avg_speed = int(df_flights["speed_kmh"].mean()) if not df_flights.empty and "speed_kmh" in df_flights else 0
+    avg_speed = (
+        int(df_flights["speed_kmh"].mean())
+        if not df_flights.empty and "speed_kmh" in df_flights
+        else 0
+    )
     st.metric("Vitesse moyenne proxy", f"{avg_speed} km/h")
 with col4:
-    st.metric("Warehouse Analytique", "PostgreSQL (flights_dw)", "Connecté" if is_real_flights else "En attente")
+    st.metric(
+        "Warehouse Analytique",
+        "PostgreSQL (flights_dw)",
+        "Connecté" if is_real_flights else "En attente",
+    )
 
 # ─────────────────────────────────────────────────────────────
 # Navigation par Onglets
