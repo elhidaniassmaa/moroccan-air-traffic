@@ -1,4 +1,4 @@
-# 🇲🇦 Moroccan Air Traffic Streaming Platform (Enterprise Edition)
+# Moroccan Air Traffic Streaming Platform 
 
 ![CI Quality & Data Tests](https://github.com/your-org/moroccan-air-traffic/actions/workflows/ci.yml/badge.svg)
 ![Python 3.11](https://img.shields.io/badge/python-3.11-blue.svg)
@@ -13,18 +13,18 @@ Le système corrèle le trafic avec les conditions météorologiques (Open-Meteo
 
 ---
 
-## 🎯 Problématique & Objectif Métier
+## Problématique & Objectif Métier
 
 Comment le trafic aérien au-dessus du Maroc varie-t-il selon :
 - **La météo et les conditions critiques** (rafales > 50 km/h, visibilité < 2 km, précipitations) ?
 - **Les cycles religieux et vacances** (Ramadan, Aïd al-Fitr, chassés-croisés des MRE) ?
 - **Les méga-événements sportifs et économiques** (CAN 2025, Coupe du Monde FIFA 2030) ?
 
-> ⚠️ **Rigueur méthodologique :** L'API OpenSky Network ne fournit pas d'horaires de vol théoriques. Aucun retard artificiel n'est injecté : la plateforme calcule des **proxies opérationnels d'ingénierie aéronautique** (densité horaire d'aéronefs distincts, phases de vol dérivées par heuristiques géodésiques, écarts par rapport aux médianes de trafic observées).
+>  **Rigueur méthodologique :** L'API OpenSky Network ne fournit pas d'horaires de vol théoriques. Aucun retard artificiel n'est injecté : la plateforme calcule des **proxies opérationnels d'ingénierie aéronautique** (densité horaire d'aéronefs distincts, phases de vol dérivées par heuristiques géodésiques, écarts par rapport aux médianes de trafic observées).
 
 ---
 
-## 🏛️ Architecture du Système
+## Architecture du Système
 
 ```mermaid
 flowchart TD
@@ -60,7 +60,7 @@ flowchart TD
 
 ---
 
-## 🛠️ Stack Technologique & Rôles
+## Stack Technologique & Rôles
 
 | Composant | Version | Rôle Opérationnel | Justification Entreprise |
 | :--- | :--- | :--- | :--- |
@@ -76,7 +76,7 @@ flowchart TD
 
 ---
 
-## 🌐 Cartographie des Services & Interfaces Web
+##  Cartographie des Services & Interfaces Web
 
 Lorsque la stack est active, tous les services sont exposés sur des ports isolés :
 
@@ -90,7 +90,7 @@ Lorsque la stack est active, tous les services sont exposés sur des ports isol�
 
 ---
 
-## 🚀 Guide de Démarrage Rapide
+## Guide de Démarrage
 
 ### Prérequis
 - Docker et Docker Compose (Docker Desktop avec support Linux Containers)
@@ -131,7 +131,7 @@ Résultat attendu : `78 passed in 0.96s`.
 
 ---
 
-## 📐 Modélisation Dimensionnelle (dbt Kimball Star Schema)
+##  Modélisation Dimensionnelle (dbt Kimball Star Schema)
 
 L'entrepôt `flights_dw` est organisé en couches standardisées :
 
@@ -167,27 +167,7 @@ Tous les modèles SQL sont conçus pour être compatibles à la fois avec **Post
 - Les arrondis spatiaux utilisent `ROUND(CAST(val AS numeric), 4)` évitant les ambiguïtés de type `double precision`.
 - Les cibles de profils sont paramétrées dans `dbt_project/profiles.yml` avec sélection transparente via `dbt run --target dev` ou `dbt run --target snowflake`.
 
----
-
-## 🎯 Préparation aux Entretiens Techniques (Data Engineering Q&A)
-
-Voici les réponses aux questions clés d'architecture susceptibles d'être posées lors de la soutenance du projet :
-
-#### Q1 : Pourquoi avoir choisi Apache Kafka avec ZooKeeper plutôt qu'une solution embarquée ?
-> **Réponse :** "Pour un projet d'envergure professionnelle, Apache Kafka 3.6 avec ZooKeeper représente le standard de référence déployé en entreprise. Il garantit une gestion fine du partitionnement (`flights.raw` partitionné par clé `icao24`), une scalabilité horizontale éprouvée, et permet de simuler un environnement de production fidèle aux exigences des grands comptes aéronautiques et logistiques."
-
-#### Q2 : Pourquoi conserver Delta Lake pour le streaming et PostgreSQL pour le Data Warehouse ?
-> **Réponse :** "C'est l'application du pattern Lakehouse : Apache Spark Structured Streaming gère l'ingestion à très haute fréquence et écrit en continu dans Delta Lake (Bronze/Silver) avec support des transactions ACID et du watermarking temporel. PostgreSQL (et Snowflake en production) agit comme l'entrepôt analytique (Gold Layer), optimisé pour les requêtes complexes de dbt, les index relationnels et l'interrogation par le tableau de bord Streamlit."
-
-#### Q3 : Comment gérez-vous l'idempotence et les doublons de vol ?
-> **Réponse :** "Le producteur Kafka publie chaque événement avec comme clé de partitionnement l'indicatif unique de l'aéronef (`icao24`). Spark applique ensuite un `dropDuplicates(['icao24', 'timestamp'])` associé à un `withWatermark('timestamp', '10 minutes')`. Cela permet d'absorber les messages arrivés en retard tout en garantissant un traitement sémantique Exactly-Once dans la couche Silver."
-
-#### Q4 : Comment la qualité des données est-elle garantie de bout en bout ?
-> **Réponse :** "La qualité s'opère à trois niveaux : (1) Validation stricte du schéma JSON Draft 2020-12 à l'ingestion avec redirection immédiate vers une Dead Letter Queue (`flights.dlq`) en cas d'anomalie ; (2) 78 tests unitaires automatisés validant les calculs Haversine, les fonctions Spark et les DAGs Airflow ; (3) 49 tests de contrainte dbt (unicité, non-nullité, clés étrangères et tests personnalisés d'intégrité sur les mouvements d'aéroports)."
-
----
-
-## 🔮 Pistes d'Évolution
+##  Pistes d'Évolution
 
 1. **Modèle de Machine Learning Prédictif** : Entraîner un modèle XGBoost ou Prophet sur `mart_traffic_weather_impact` pour anticiper les congestions d'aéroports 24 heures à l'avance en fonction des prévisions météo.
 2. **Monitoring & Alerting Datadog / Prometheus** : Exposer les métriques JMX de Kafka et Spark pour déclencher des alertes automatiques sur le lag des consommateurs.
