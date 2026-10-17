@@ -10,8 +10,9 @@ delta-spark==3.1.0
 
 # ── dbt ──────────────────────────────────────────────────────
 dbt-core>=1.7.0,<1.9
-dbt-duckdb>=1.7.0,<1.9
-duckdb>=0.10.0,<2.0
+dbt-postgres>=1.7.0,<1.9
+dbt-snowflake>=1.7.0,<1.9
+psycopg2-binary>=2.9.9,<3.0
 
 # ── Orchestration ────────────────────────────────────────────
 apache-airflow==2.8.4

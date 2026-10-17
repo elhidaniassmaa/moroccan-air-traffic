@@ -1,10 +1,8 @@
-# ─────────────────────────────────────────────────────────────
 # Dockerfile for the OpenSky Producer
-# ─────────────────────────────────────────────────────────────
 FROM python:3.11-slim AS base
 
 LABEL maintainer="moroccan-air-traffic"
-LABEL description="OpenSky Network → Redpanda producer"
+LABEL description="OpenSky Network → Apache Kafka producer"
 
 # Prevent Python from buffering stdout/stderr
 ENV PYTHONUNBUFFERED=1 \
@@ -19,8 +17,7 @@ RUN pip install --no-cache-dir -r requirements-producer.txt
 # Copy source code
 COPY ingestion/ ./ingestion/
 
-# Health check: process is alive
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
-    CMD pgrep -f opensky_producer || exit 1
+    CMD kill -0 1 || exit 1
 
 ENTRYPOINT ["python", "-m", "ingestion.producers.opensky_producer"]

@@ -29,7 +29,7 @@ matched as (
         a.airport_iata,
         a.airport_name,
         a.city,
-        round({{ haversine_km('f.latitude', 'f.longitude', 'a.latitude', 'a.longitude') }}, 2) as distance_to_airport_km,
+        round(cast({{ haversine_km('f.latitude', 'f.longitude', 'a.latitude', 'a.longitude') }} as numeric), 2) as distance_to_airport_km,
         a.influence_radius_km
     from flights f
     cross join airports a

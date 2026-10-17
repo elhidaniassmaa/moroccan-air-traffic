@@ -20,8 +20,8 @@ seeds:
     +schema: seeds
     airports:
       +column_types:
-        latitude: double
-        longitude: double
+        latitude: float
+        longitude: float
         elevation_m: integer
         influence_radius_km: integer
     airlines:

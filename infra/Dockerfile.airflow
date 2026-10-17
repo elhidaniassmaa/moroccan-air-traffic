@@ -1,0 +1,19 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Dockerfile personnalisé pour Apache Airflow 2.8.4 avec dbt-postgres & dbt-snowflake
+# ─────────────────────────────────────────────────────────────────────────────
+FROM apache/airflow:2.8.4-python3.11
+
+USER root
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends git && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+USER airflow
+
+# Installation de dbt pour PostgreSQL et Snowflake (avec guillemets pour éviter la redirection bash <)
+RUN pip install --no-cache-dir \
+    "dbt-core>=1.7.0,<1.9" \
+    "dbt-postgres>=1.7.0,<1.9" \
+    "dbt-snowflake>=1.7.0,<1.9" \
+    "psycopg2-binary>=2.9.9"

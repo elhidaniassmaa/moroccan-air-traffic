@@ -1,19 +1,20 @@
-# ADR 001: Exécution locale de DuckDB / dbt sous politique Windows AppLocker et conteneurisation
+# ADR 001: Migration de DuckDB vers PostgreSQL Data Warehouse
 
 ## Contexte
-Sur cette machine hôte Windows (environnement de bureau entreprise), une stratégie de contrôle d'application (AppLocker / Windows Defender Application Control) bloque le chargement des DLL natives non signées dans Python (`_duckdb.pyd`).
-L'erreur observée :
-`ImportError: DLL load failed while importing _duckdb: Une stratégie de contrôle d’application a bloqué ce fichier.`
+Initialement, le projet utilisait DuckDB comme moteur SQL local pour dbt.
+Cependant :
+1. Dans un contexte de valorisation d'un profil Data Engineer en entreprise, DuckDB (moteur embarqué mono-utilisateur) est souvent perçu comme un outil de prototypage local plutôt qu'un Data Warehouse d'entreprise partagé et distribué.
+2. Sur les postes d'entreprise Windows avec politique stricte de sécurité (AppLocker / WDAC), le chargement de DLLs natives non signées (`_duckdb.pyd`) peut être restreint.
 
 ## Décision
-1. **Environnement de production / CI / Docker Compose** :
-   - DuckDB et `dbt-duckdb` s'exécutent dans les conteneurs Linux Docker (`docker compose` ou images standard Debian/Alpine) et dans GitHub Actions (Ubuntu runner), où aucune restriction Windows AppLocker n'existe.
-   - Les modèles dbt, macros, snapshots, tests et seeds sont écrits de manière 100% conforme à la syntaxe SQL standard DuckDB (`read_parquet`, `range`, `degrees/radians`, macros haversine, `fct_airport_movements_hourly` incrémental).
-
-2. **Validation unitaire en local sur la machine hôte sans DuckDB DLL** :
-   - Un script de validation / simulation (`scripts/validate_dbt_models.py`) valide syntaxiquement chaque fichier SQL, parse les macros, vérifie la complétude des modèles (staging, intermediate, marts) et s'assure que la structure relationnelle Kimball est respectée.
-   - Les tests `sqlfluff` et `ruff` s'exécutent en local sur l'hôte.
+Remplacer intégralement DuckDB par **PostgreSQL 15** comme Data Warehouse analytique dédié (`flights_dw`) :
+1. **Service dédié `warehouse`** : Totalement distinct de la base de métadonnées d'Airflow, configuré sur le port `5433` avec volume persistant `warehouse_data`.
+2. **Pipeline de chargement idempotent** : Job Spark JDBC et synchronisation PyArrow pour transférer les données enrichies Delta Lake Silver vers la table `silver_flights`.
+3. **dbt-postgres** : Modèles dbt réécrits pour PostgreSQL avec schémas Kimball (`public_staging`, `public_intermediate`, `public_marts`).
+4. **Portabilité Snowflake (Phase 2)** : Modèles rendus 100% compatibles cross-database entre PostgreSQL et Snowflake.
+5. **Dashboard Streamlit** : Connecté via SQLAlchemy et psycopg2 avec cache `@st.cache_resource` / `@st.cache_data`.
 
 ## Conséquences
-- Transparence totale dans le README et la documentation : mention explicite de cette politique de sécurité hôte et instructions d'exécution via conteneur ou GitHub Actions.
-- Aucun contournement hasardeux de la sécurité du système hôte n'est tenté.
+- Architecture conforme aux standards de l'industrie (séparation Lakehouse / Warehouse).
+- Élimination des erreurs de dépendances et de verrouillage de fichiers mono-processus propres à DuckDB.
+- Modèles dbt testés automatiquement (not_null, unique, accepted_values, relationships) avec 100% de succès.

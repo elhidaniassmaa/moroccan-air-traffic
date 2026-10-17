@@ -10,10 +10,10 @@ renamed as (
         airport_name,
         city,
         country,
-        cast(latitude as double) as latitude,
-        cast(longitude as double) as longitude,
+        cast(latitude as double precision) as latitude,
+        cast(longitude as double precision) as longitude,
         cast(elevation_m as integer) as elevation_m,
-        round(cast(elevation_m as double) * 3.28084, 1) as elevation_ft,
+        round(cast(elevation_m * 3.28084 as numeric), 1) as elevation_ft,
         cast(influence_radius_km as integer) as influence_radius_km
     from source
 )

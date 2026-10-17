@@ -1,0 +1,6 @@
+# Configuration Kafka UI (provectuslabs/kafka-ui:v0.7.2)
+# Connexion au broker Apache Kafka du cluster moroccan-air-traffic
+kafka:
+  clusters:
+    - name: moroccan-air-traffic
+      bootstrapServers: kafka:9092

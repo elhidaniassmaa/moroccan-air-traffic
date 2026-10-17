@@ -24,8 +24,8 @@ aggregated as (
         grid_lon,
         count(distinct icao24) as distinct_aircraft_count,
         count(*) as total_position_pings,
-        round(avg(baro_altitude_ft), 0) as avg_altitude_ft,
-        round(avg(velocity_kmh), 1) as avg_speed_kmh
+        round(cast(avg(baro_altitude_ft) as numeric), 0) as avg_altitude_ft,
+        round(cast(avg(velocity_kmh) as numeric), 1) as avg_speed_kmh
     from gridded
     group by
         event_date,

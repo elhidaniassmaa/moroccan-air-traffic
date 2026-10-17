@@ -1,23 +1,45 @@
 moroccan_air_traffic:
-  target: ci
+  target: dev
   outputs:
     dev:
-      type: duckdb
-      path: "{{ env_var('DUCKDB_PATH', '../data/analytics.duckdb') }}"
+      type: postgres
+      host: "{{ env_var('WAREHOUSE_HOST', 'warehouse') }}"
+      user: "{{ env_var('WAREHOUSE_USER', 'flights_user') }}"
+      password: "{{ env_var('WAREHOUSE_PASSWORD', 'flights_password_dev') }}"
+      port: "{{ env_var('WAREHOUSE_PORT', '5432') | int }}"
+      dbname: "{{ env_var('WAREHOUSE_DB', 'flights_dw') }}"
+      schema: public
       threads: 4
-      extensions:
-        - parquet
-        - httpfs
 
     ci:
-      type: duckdb
-      path: "{{ env_var('DUCKDB_PATH', ':memory:') }}"
+      type: postgres
+      host: "{{ env_var('WAREHOUSE_HOST', 'warehouse') }}"
+      user: "{{ env_var('WAREHOUSE_USER', 'flights_user') }}"
+      password: "{{ env_var('WAREHOUSE_PASSWORD', 'flights_password_dev') }}"
+      port: "{{ env_var('WAREHOUSE_PORT', '5432') | int }}"
+      dbname: "{{ env_var('WAREHOUSE_DB', 'flights_dw') }}"
+      schema: public
       threads: 2
 
     prod:
-      type: duckdb
-      path: "{{ env_var('DUCKDB_PATH', '/data/analytics.duckdb') }}"
+      type: postgres
+      host: "{{ env_var('WAREHOUSE_HOST', 'warehouse') }}"
+      user: "{{ env_var('WAREHOUSE_USER', 'flights_user') }}"
+      password: "{{ env_var('WAREHOUSE_PASSWORD', 'flights_password_dev') }}"
+      port: "{{ env_var('WAREHOUSE_PORT', '5432') | int }}"
+      dbname: "{{ env_var('WAREHOUSE_DB', 'flights_dw') }}"
+      schema: public
       threads: 4
-      extensions:
-        - parquet
-        - httpfs
+
+    # ── Phase 2 : Cible Snowflake (portabilité cloud) ────────────────────────
+    snowflake:
+      type: snowflake
+      account: "{{ env_var('SNOWFLAKE_ACCOUNT', '') }}"
+      user: "{{ env_var('SNOWFLAKE_USER', '') }}"
+      password: "{{ env_var('SNOWFLAKE_PASSWORD', '') }}"
+      role: "{{ env_var('SNOWFLAKE_ROLE', 'TRANSFORMER') }}"
+      database: "{{ env_var('SNOWFLAKE_DATABASE', 'MOROCCAN_AIR_TRAFFIC') }}"
+      warehouse: "{{ env_var('SNOWFLAKE_WAREHOUSE', 'COMPUTE_WH') }}"
+      schema: "{{ env_var('SNOWFLAKE_SCHEMA', 'GOLD') }}"
+      threads: 4
+      client_session_keep_alive: False

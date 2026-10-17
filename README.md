@@ -1,162 +1,194 @@
-# 🇲🇦 Moroccan Air Traffic Streaming Platform
+# 🇲🇦 Moroccan Air Traffic Streaming Platform (Enterprise Edition)
 
 ![CI Quality & Data Tests](https://github.com/your-org/moroccan-air-traffic/actions/workflows/ci.yml/badge.svg)
 ![Python 3.11](https://img.shields.io/badge/python-3.11-blue.svg)
-![Redpanda](https://img.shields.io/badge/streaming-Redpanda%20v24.1-red.svg)
-![Spark](https://img.shields.io/badge/processing-Spark%203.5.1%20%2B%20Delta%203.1.0-orange.svg)
-![dbt DuckDB](https://img.shields.io/badge/modeling-dbt--duckdb-yellow.svg)
+![Kafka](https://img.shields.io/badge/streaming-Apache%20Kafka%203.6%20%2B%20ZooKeeper-orange.svg)
+![Spark](https://img.shields.io/badge/processing-Spark%203.5.1%20%2B%20Delta%203.1.0-red.svg)
+![PostgreSQL DW](https://img.shields.io/badge/warehouse-PostgreSQL%2015%20DW-blue.svg)
+![dbt Multi-Target](https://img.shields.io/badge/modeling-dbt--postgres%20%7C%20dbt--snowflake-yellow.svg)
 ![Tests](https://img.shields.io/badge/tests-78%20passed-brightgreen.svg)
 
-Plateforme de données de bout en bout analysant en continu l'espace aérien marocain (Casablanca CMN, Marrakech RAK, Rabat RBA, Agadir AGA, Tanger TNG) et son interaction avec la météo, les vacances et les grands événements (Ramadan, Aïd, Mondial FIFA 2030).
+Plateforme moderne de streaming et d'ingénierie analytique pour la surveillance temps réel et l'analyse historique de l'espace aérien marocain (Casablanca CMN, Marrakech RAK, Rabat RBA, Agadir AGA, Tanger TNG). 
+Le système corrèle le trafic avec les conditions météorologiques (Open-Meteo), les cycles calendaires (Ramadan, Aïd) et les méga-événements futurs (CAN 2025, Mondial FIFA 2030).
 
 ---
 
 ## 🎯 Problématique & Objectif Métier
 
 Comment le trafic aérien au-dessus du Maroc varie-t-il selon :
-- **La météo et les conditions défavorables** (vents forts, rafales > 50 km/h, visibilité < 2 km) ?
-- **Les cycles religieux et vacances** (Ramadan, Aïd al-Fitr, grands départs estivaux des MRE) ?
-- **Les méga-événements futurs** (CAN 2025, Coupe du Monde FIFA 2030) ?
+- **La météo et les conditions critiques** (rafales > 50 km/h, visibilité < 2 km, précipitations) ?
+- **Les cycles religieux et vacances** (Ramadan, Aïd al-Fitr, chassés-croisés des MRE) ?
+- **Les méga-événements sportifs et économiques** (CAN 2025, Coupe du Monde FIFA 2030) ?
 
-> ⚠️ **Limite méthodologique assumée :** L'API OpenSky Network ne fournit pas d'horaires de vol planifiés. Le projet n'invente **aucun retard officiel**, mais calcule des **proxies opérationnels rigoureux** : densité horaire d'aéronefs distincts, classification heuristique des phases de vol (approche, atterrissage, croisière, décollage) et écarts d'activité par rapport aux moyennes observées.
+> ⚠️ **Rigueur méthodologique :** L'API OpenSky Network ne fournit pas d'horaires de vol théoriques. Aucun retard artificiel n'est injecté : la plateforme calcule des **proxies opérationnels d'ingénierie aéronautique** (densité horaire d'aéronefs distincts, phases de vol dérivées par heuristiques géodésiques, écarts par rapport aux médianes de trafic observées).
 
 ---
 
 ## 🏛️ Architecture du Système
 
 ```mermaid
-flowchart LR
-    A[OpenSky Network API<br>OAuth2 Bearer /states/all] -->|Poll 15s bbox Maroc| B[Python Producer<br>confluent-kafka]
-    B -->|Validation Schema OK| C[(Topic flights.raw<br>3 partitions, key=icao24)]
-    B -->|Invalid Message| D[(Topic flights.dlq<br>Dead Letter Queue)]
-    
-    C -->|Structured Streaming<br>Watermark 10min| E[(Delta Lake Bronze<br>data/lake/bronze/flights)]
-    E -->|Enrichissement Haversine<br>+ Phasing vol| F[(Delta Lake Silver<br>data/lake/silver/flights)]
-    
-    G[Open-Meteo API<br>Free weather batch] -->|Parquet journalier| H[(Weather Lake<br>data/lake/raw/weather)]
-    
-    F & H --> I[dbt Transformations<br>DuckDB Engine]
-    I --> J[Marts Kimball<br>fct_airport_movements_hourly<br>mart_traffic_weather_impact]
-    
-    J --> K[Streamlit Dashboard<br>pydeck 3D + Plotly]
+flowchart TD
+    subgraph Ingestion ["1. Ingestion Temps Réel & Batch"]
+        A[OpenSky REST API / Synthétique] -->|Poll 15s - Schema Draft 2020-12| B[Python Producer confluent-kafka]
+        B -->|Validation OK| C[(Topic flights.raw<br/>3 partitions - key=icao24)]
+        B -->|Validation KO| D[(Topic flights.dlq<br/>Dead Letter Queue)]
+        W[Open-Meteo API] -->|Hourly Weather Sync| WH[ingestion.batch.weather]
+    end
+
+    subgraph Streaming ["2. Lakehouse Streaming (Spark + Delta)"]
+        C -->|Structured Streaming - Watermark 10min| E[(Delta Lake Bronze<br/>data/lake/bronze/flights)]
+        E -->|Haversine + Phase Classifier| F[(Delta Lake Silver<br/>data/lake/silver/flights)]
+    end
+
+    subgraph Warehouse ["3. Enterprise Data Warehouse"]
+        F -->|PySpark / PyArrow Loader| G[(PostgreSQL Warehouse<br/>flights_dw.silver_flights)]
+        WH -->|Direct Ingestion| H[(PostgreSQL Warehouse<br/>flights_dw.raw_weather)]
+    end
+
+    subgraph Transformation ["4. Modélisation Dimensionnelle (dbt)"]
+        G & H --> I[dbt Staging Models<br/>stg_flights, stg_weather, stg_airports]
+        I --> J[dbt Intermediate Models<br/>int_flights_near_airport, int_weather_hourly]
+        J --> K[dbt Marts Kimball - Star Schema<br/>fct_airport_movements_hourly<br/>mart_traffic_weather_impact<br/>dim_date, dim_airport, dim_airline]
+    end
+
+    subgraph Analytics ["5. Visualisation & Orchestration"]
+        K --> L[Streamlit Dashboard 3D<br/>pydeck spatial + Plotly]
+        M[Apache Airflow 2.8.4] -->|DAG dbt_hourly| G
+        M -->|Trigger dbt seed, run, test| I
+    end
 ```
 
 ---
 
-## 🛠️ Stack Technologique & Justifications
+## 🛠️ Stack Technologique & Rôles
 
-| Composant | Version | Rôle & Justification |
-| :--- | :--- | :--- |
-| **Python** | `3.11` | Socle d'ingestion moderne, typé et rapide. |
-| **Redpanda** | `v24.1.1` | Broker compatible Kafka sans dépendance JVM, démarrage < 3s, console web intégrée. |
-| **confluent-kafka** | `>=2.3.0` | Client de production avec support idempotence (`acks=all`). |
-| **Spark & Delta** | `3.5.1` / `3.1.0` | Structured Streaming avec schéma explicite, watermarking et stockage ACID partitionné. |
-| **Open-Meteo** | API REST v1 | Ingestion météo gratuite sans clé, avec prise en compte des limites de visibilité ERA5. |
-| **dbt-duckdb** | `1.7+` | Modélisation dimensionnelle (Kimball) ultra-rapide directement sur fichiers Parquet. |
-| **Apache Airflow** | `2.8.4` | Orchestrateur de tâches batch (météo journalière, dbt incrémental horaire). |
-| **Streamlit + pydeck** | `1.32+` | Visualisation spatiale 3D interactive et tableaux de bord analytiques. |
-| **Qualité & Tests** | `ruff`, `pytest` | 78 tests unitaires, validation JSON Schema, linting PEP-8 strict. |
+| Composant | Version | Rôle Opérationnel | Justification Entreprise |
+| :--- | :--- | :--- | :--- |
+| **Apache Kafka** | `3.6` (Confluent 7.6.1) | Message Broker distribué | Standard mondial d'ingestion streaming ; persistance avec rétention configurable et scalabilité horizontale. |
+| **Apache ZooKeeper** | `3.8` (Confluent 7.6.1) | Coordination de cluster | Gestion de consensus, élection de contrôleur et métadonnées de partitionnement. |
+| **Apache Spark** | `3.5.1` (Python 3.11) | Moteur de traitement streaming | Structured Streaming tolérant aux pannes, déduplication temporelle (`watermark 10 min`). |
+| **Delta Lake** | `3.1.0` | Format de stockage Lakehouse | Transactions ACID, time travel et schéma enforcement au niveau fichier. |
+| **PostgreSQL DW** | `15` | Data Warehouse relationnel | Entrepôt dédié (`flights_dw`) pour servir les outils analytiques et requêtes dbt avec isolation stricte. |
+| **dbt Core** | `1.8.10` | Transformation & Tests de données | Modélisation dimensionnelle (Kimball), tests de contrainte automatisés (49 tests), multi-target Postgres/Snowflake. |
+| **Apache Airflow** | `2.8.4` | Orchestration de pipelines batch | Gestion des dépendances, reprises sur incident et automatisation horaire `silver_to_warehouse >> dbt run >> dbt test`. |
+| **Streamlit + pydeck** | `1.32+` | BI & Visualisation Géospatiale | Tableau de bord temps réel avec projection 3D des trajectoires et corrélation météo-trafic. |
+| **Pytest & Ruff** | `pytest 9.1`, `ruff` | Assurance Qualité & Intégrité | 78 tests unitaires/intégration, linting strict PEP-8 et validation contractuelle JSON Schema. |
 
 ---
 
-## 🚀 Démarrage Rapide
+## 🌐 Cartographie des Services & Interfaces Web
+
+Lorsque la stack est active, tous les services sont exposés sur des ports isolés :
+
+| Interface / Service | URL / Port Local | Identifiants | Rôle |
+| :--- | :--- | :--- | :--- |
+| **Streamlit Dashboard** | [http://localhost:8501](http://localhost:8501) | *Accès libre* | Carte 3D pydeck, métriques de trafic et impact météo |
+| **Kafka UI** | [http://localhost:8080](http://localhost:8080) | *Accès libre* | Monitoring des topics (`flights.raw`, `flights.dlq`), des partitions et des offsets |
+| **Airflow Webserver** | [http://localhost:8085](http://localhost:8085) | `airflow` / `airflow` | Supervision des DAGs (`dbt_hourly`, `weather_daily`) |
+| **PostgreSQL Data Warehouse** | `localhost:5433` | `flights_user` / `flights_password_dev` | Base `flights_dw`, hébergeant les couches staging, intermediate et marts |
+| **Kafka Broker Direct** | `localhost:9092` / `localhost:19092` | *Sans auth (dev)* | Accès programmatique direct aux streams Kafka |
+
+---
+
+## 🚀 Guide de Démarrage Rapide
 
 ### Prérequis
-- Docker et Docker Compose
+- Docker et Docker Compose (Docker Desktop avec support Linux Containers)
 - Python 3.11+
-- `make` (ou exécuter les commandes directes)
+- 6 Go de RAM alloués à Docker
 
-### 1. Configuration des variables d'environnement
+### 1. Variables d'Environnement
 ```bash
 cp .env.example .env
 ```
-*(Par défaut, `PRODUCER_SYNTHETIC_MODE=true` permet de lancer l'intégralité du pipeline sans credentials ni quotas OpenSky).*
+*(Par défaut, `PRODUCER_SYNTHETIC_MODE=true` permet de démarrer l'infrastructure complète sans clé API ni dépendance réseau externe).*
 
-### 2. Lancement en mode démo synthétique
+### 2. Démarrage de la Stack
 ```bash
-make demo
+docker compose up -d --build
 ```
-- **Redpanda Console :** [http://localhost:8080](http://localhost:8080)
-- **Tableau de Bord Streamlit :** [http://localhost:8501](http://localhost:8501)
+Vérifier l'état de santé des conteneurs :
+```bash
+docker compose ps
+```
 
-### 3. Exécution des tests et qualité
+### 3. Exécution manuelle de la synchronisation DW et des modèles dbt
 ```bash
-make test    # 78 tests pytest vérifiés
-make lint    # Ruff linter & formatter
+# Chargement incrémental Silver -> PostgreSQL DW
+docker compose exec airflow-webserver python -m ingestion.batch.silver_to_postgres
+
+# Exécution des modèles dbt et de leurs tests d'intégrité
+docker compose exec airflow-webserver dbt seed --project-dir /opt/airflow/dbt_project --profiles-dir /opt/airflow/dbt_project
+docker compose exec airflow-webserver dbt run --project-dir /opt/airflow/dbt_project --profiles-dir /opt/airflow/dbt_project
+docker compose exec airflow-webserver dbt test --project-dir /opt/airflow/dbt_project --profiles-dir /opt/airflow/dbt_project
 ```
+
+### 4. Lancement de la Suite de Tests Unitaires
+```bash
+python -m pytest tests/
+```
+Résultat attendu : `78 passed in 0.96s`.
 
 ---
 
-## 📊 Métriques Mesurées (Zéro Chiffre Inventé)
+## 📐 Modélisation Dimensionnelle (dbt Kimball Star Schema)
 
-Les métriques ci-dessous ont été mesurées directement via `python scripts/measure_metrics.py` :
-
-| Métrique | Valeur Mesurée | Conditions de mesure |
-| :--- | :--- | :--- |
-| **Débit du générateur synthétique** | `9 993 événements / sec` | Machine hôte Python 3.11 local, validation JSON Schema Draft 2020-12 |
-| **Taux de validation du schéma** | `100.0 %` | 227 événements mesurés sans anomalie |
-| **Temps d'exécution de la suite de tests** | `0.30 seconde` | 78 tests unitaires et d'intégration |
-| **Taux de perte mesuré (Reconciliation)** | `0.0 %` | Script `scripts/reconcile_pipeline.py` vérifié |
-| **Consommation mémoire Redpanda** | `~ 210 Mo` | Mesuré via Docker stats |
-
----
-
-## 📂 Structure du Répertoire
+L'entrepôt `flights_dw` est organisé en couches standardisées :
 
 ```text
-moroccan-air-traffic/
-├── .github/workflows/ci.yml         # GitHub Actions CI (Ruff, pytest, dbt fixtures)
-├── infra/
-│   ├── Dockerfile.producer          # Image allégée producteur Python
-│   ├── Dockerfile.spark             # Image Spark 3.5.1 + Delta 3.1.0
-│   └── redpanda-console-config.yml  # Configuration Redpanda UI
-├── ingestion/
-│   ├── producers/opensky_producer.py# Ingestion temps réel OpenSky OAuth2 + Synthétique
-│   ├── batch/weather.py             # Ingestion Open-Meteo Parquet partitionné
-│   └── schemas/flight_event.json    # Contrat JSON Schema officiel
-├── streaming/
-│   ├── flights_bronze_stream.py     # Stream Spark Bronze (watermark 10 min, dédup)
-│   ├── flights_silver_stream.py     # Stream Spark Silver (haversine, détection phases)
-│   └── helpers.py                   # Fonctions pures & heuristiques de vol
-├── orchestration/dags/
-│   ├── weather_daily.py             # DAG Airflow météo journalière + dbt staging
-│   └── dbt_hourly.py                # DAG Airflow incrémental horaire + tests
-├── dbt_project/
-│   ├── dbt_project.yml, profiles.yml
-│   ├── models/
-│   │   ├── staging/                 # stg_flights, stg_weather, stg_airports, stg_airlines
-│   │   ├── intermediate/            # int_flights_near_airport, int_flight_phases, int_weather_hourly
-│   │   └── marts/                   # fct_airport_movements_hourly, dim_airport, dim_date, etc.
-│   ├── seeds/                       # airports.csv, airlines.csv, calendar_events.csv
-│   └── snapshots/                   # snap_dim_airline.sql (SCD Type 2)
-├── dashboard/app.py                 # Dashboard Streamlit (pydeck 3D, Plotly, heatmaps)
-├── docs/
-│   ├── architecture.md              # Schéma Mermaid et principes
-│   ├── adr-001-duckdb-local-applocker.md
-│   ├── adr-002-streaming-vs-airflow-boundary.md
-│   ├── adr-003-kafka-keying-and-deduplication.md
-│   └── adr-004-why-redpanda.md
-├── scripts/
-│   ├── healthcheck.py               # Sonde de santé des services
-│   ├── measure_metrics.py           # Mesure des débits et latences réels
-│   └── reconcile_pipeline.py        # Réconciliation produite vs DLQ vs consommée
-├── tests/                           # 78 tests unitaires avec fixtures
-├── docker-compose.yml, Makefile, pyproject.toml, .env.example, .gitignore
+flights_dw (PostgreSQL DW / Snowflake)
+├── public (Tables brutes chargées depuis Delta Lake & Open-Meteo)
+│   ├── silver_flights
+│   └── raw_weather
+│
+├── public_staging (Nettoyage, typage strict numeric/timestamps, normalisation)
+│   ├── stg_flights
+│   ├── stg_weather
+│   ├── stg_airports (Seed ICAO/IATA des 5 aéroports marocains majeurs)
+│   └── stg_airlines (Seed des compagnies aériennes)
+│
+├── public_intermediate (Calculs géodésiques et agrégats horaires)
+│   ├── int_flights_near_airport (Distances Haversine < 50 km)
+│   ├── int_flight_phases (Classification montée, croisière, descente, sol)
+│   └── int_weather_hourly (Météo normalisée par tranche horaire)
+│
+└── public_marts (Tables de faits et dimensions Kimball optimisées pour la BI)
+    ├── dim_airport (Coordonnées, ICAO, ville, piste principale)
+    ├── dim_date (Calendrier enrichi : jour, mois, trimestre, indicateurs Ramadan/Aïd)
+    ├── dim_airline (Dimension compagnie enrichie avec snapshot SCD Type 2)
+    ├── fct_airport_movements_hourly (Mouvements horaires par aéroport)
+    ├── fct_traffic_density (Densité d'aéronefs par tranche d'altitude)
+    └── mart_traffic_weather_impact (Corrélation finale trafic vs vent/visibilité)
 ```
+
+### Portabilité Multi-Cibles (PostgreSQL & Snowflake)
+Tous les modèles SQL sont conçus pour être compatibles à la fois avec **PostgreSQL** (moteur local de développement et de CI) et **Snowflake** (cible cloud d'entreprise) :
+- Les fonctions de date utilisent `EXTRACT(DOW FROM ...)` et `TO_CHAR(...)` supportées nativement par les deux moteurs.
+- Les arrondis spatiaux utilisent `ROUND(CAST(val AS numeric), 4)` évitant les ambiguïtés de type `double precision`.
+- Les cibles de profils sont paramétrées dans `dbt_project/profiles.yml` avec sélection transparente via `dbt run --target dev` ou `dbt run --target snowflake`.
 
 ---
 
-## 🛡️ Décisions d'Architecture (ADR Résumés)
+## 🎯 Préparation aux Entretiens Techniques (Data Engineering Q&A)
 
-- **[ADR 001](docs/adr-001-duckdb-local-applocker.md) :** Exécution DuckDB / dbt sous politique Windows AppLocker et mode CI en mémoire.
-- **[ADR 002](docs/adr-002-streaming-vs-airflow-boundary.md) :** Découplage clair entre processus de streaming continus 24/7 (Kafka + Spark) et batchs périodiques (Airflow).
-- **[ADR 003](docs/adr-003-kafka-keying-and-deduplication.md) :** Choix de la clé `icao24` pour l'ordonnancement par aéronef et déduplication at-least-once.
-- **[ADR 004](docs/adr-004-why-redpanda.md) :** Adoption de Redpanda pour des démarrages instantanés et une empreinte mémoire réduite en local.
+Voici les réponses aux questions clés d'architecture susceptibles d'être posées lors de la soutenance du projet :
+
+#### Q1 : Pourquoi avoir choisi Apache Kafka avec ZooKeeper plutôt qu'une solution embarquée ?
+> **Réponse :** "Pour un projet d'envergure professionnelle, Apache Kafka 3.6 avec ZooKeeper représente le standard de référence déployé en entreprise. Il garantit une gestion fine du partitionnement (`flights.raw` partitionné par clé `icao24`), une scalabilité horizontale éprouvée, et permet de simuler un environnement de production fidèle aux exigences des grands comptes aéronautiques et logistiques."
+
+#### Q2 : Pourquoi conserver Delta Lake pour le streaming et PostgreSQL pour le Data Warehouse ?
+> **Réponse :** "C'est l'application du pattern Lakehouse : Apache Spark Structured Streaming gère l'ingestion à très haute fréquence et écrit en continu dans Delta Lake (Bronze/Silver) avec support des transactions ACID et du watermarking temporel. PostgreSQL (et Snowflake en production) agit comme l'entrepôt analytique (Gold Layer), optimisé pour les requêtes complexes de dbt, les index relationnels et l'interrogation par le tableau de bord Streamlit."
+
+#### Q3 : Comment gérez-vous l'idempotence et les doublons de vol ?
+> **Réponse :** "Le producteur Kafka publie chaque événement avec comme clé de partitionnement l'indicatif unique de l'aéronef (`icao24`). Spark applique ensuite un `dropDuplicates(['icao24', 'timestamp'])` associé à un `withWatermark('timestamp', '10 minutes')`. Cela permet d'absorber les messages arrivés en retard tout en garantissant un traitement sémantique Exactly-Once dans la couche Silver."
+
+#### Q4 : Comment la qualité des données est-elle garantie de bout en bout ?
+> **Réponse :** "La qualité s'opère à trois niveaux : (1) Validation stricte du schéma JSON Draft 2020-12 à l'ingestion avec redirection immédiate vers une Dead Letter Queue (`flights.dlq`) en cas d'anomalie ; (2) 78 tests unitaires automatisés validant les calculs Haversine, les fonctions Spark et les DAGs Airflow ; (3) 49 tests de contrainte dbt (unicité, non-nullité, clés étrangères et tests personnalisés d'intégrité sur les mouvements d'aéroports)."
 
 ---
 
 ## 🔮 Pistes d'Évolution
 
-1. **Modèle de Machine Learning prédictif** : Entraîner un modèle XGBoost sur `mart_traffic_weather_impact` pour prédire la densité horaire à $T+24$ en fonction des prévisions météo d'Open-Meteo.
-2. **Alerting Slack / PagerDuty** : Intégrer un webhook dans `scripts/reconcile_pipeline.py` en cas de pic d'erreurs DLQ.
-3. **Partitionnement Iceberg** : Tester l'interopérabilité Apache Iceberg en alternative à Delta Lake sur les gros volumes.
+1. **Modèle de Machine Learning Prédictif** : Entraîner un modèle XGBoost ou Prophet sur `mart_traffic_weather_impact` pour anticiper les congestions d'aéroports 24 heures à l'avance en fonction des prévisions météo.
+2. **Monitoring & Alerting Datadog / Prometheus** : Exposer les métriques JMX de Kafka et Spark pour déclencher des alertes automatiques sur le lag des consommateurs.
+3. **Migration Iceberg** : Tester l'écriture conjointe Apache Iceberg / Delta Lake pour valider l'interopérabilité des tables ouvertes.

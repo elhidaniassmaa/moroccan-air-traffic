@@ -1,8 +1,13 @@
 -- Dimension: Date with Moroccan Calendar Events, School Holidays & Mega Events
+-- Compatible PostgreSQL et Snowflake
 with date_spine as (
-    select
-        cast(range as date) as date_day
-    from range(date '2024-01-01', date '2030-12-31', interval '1 day')
+    {% if target.type == 'snowflake' %}
+    select dateadd(day, seq4(), '2024-01-01'::date) as date_day
+    from table(generator(rowcount => 2557))
+    {% else %}
+    select cast(d as date) as date_day
+    from generate_series(date '2024-01-01', date '2030-12-31', interval '1 day') as d
+    {% endif %}
 ),
 
 events as (
@@ -15,8 +20,13 @@ expanded as (
         extract(year from d.date_day) as year_num,
         extract(month from d.date_day) as month_num,
         extract(day from d.date_day) as day_num,
+        {% if target.type == 'snowflake' %}
         dayname(d.date_day) as day_name,
         case when extract(dayofweek from d.date_day) in (0, 6) then true else false end as is_weekend,
+        {% else %}
+        trim(to_char(d.date_day, 'Day')) as day_name,
+        case when extract(dow from d.date_day) in (0, 6) then true else false end as is_weekend,
+        {% endif %}
         e.event_name,
         e.event_type
     from date_spine d

@@ -46,3 +46,7 @@ models:
       - name: longitude
         tests:
           - not_null
+      - name: flight_phase
+        tests:
+          - accepted_values:
+              values: ['on_ground', 'climb', 'cruise', 'descent', 'approach', 'landing', 'takeoff', 'unknown']

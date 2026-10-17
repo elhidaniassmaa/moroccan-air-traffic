@@ -1,6 +1,6 @@
 """Validation and syntax verification for dbt models, seeds, macros and schemas.
 
-Runs in local environments where native C-extension DLLs (like DuckDB)
+Runs in local environments where native C-extension DLLs
 may be restricted by enterprise AppLocker policies, ensuring project
 structure, referential consistency, macros, and schema compliance.
 """

@@ -1,14 +1,40 @@
 version: 2
 
 sources:
-  - name: data_lake
-    description: "Parquet extracts and Lakehouse data"
+  - name: warehouse_raw
+    description: "Tables sources brutes chargées dans le Data Warehouse PostgreSQL"
+    schema: public
     tables:
-      - name: raw_weather
-        description: "Hourly weather observations and forecasts from Open-Meteo"
-        meta:
-          external_location: "read_parquet('../data/lake/raw/weather/**/*.parquet')"
       - name: silver_flights
-        description: "Enriched flight events from Delta/Parquet lake"
-        meta:
-          external_location: "read_parquet('../data/lake/silver/flights/**/*.parquet')"
+        description: "Table des vols enrichis Silver chargée de manière idempotente depuis Delta Lake"
+        columns:
+          - name: icao24
+            description: "Identifiant ICAO 24-bit transpondeur de l'aéronef"
+            tests:
+              - not_null
+          - name: time_position
+            description: "Horodatage de la position géographique (epoch seconds)"
+            tests:
+              - not_null
+          - name: latitude
+            description: "Latitude de l'aéronef"
+            tests:
+              - not_null
+          - name: longitude
+            description: "Longitude de l'aéronef"
+            tests:
+              - not_null
+
+      - name: raw_weather
+        description: "Observations et prévisions météorologiques horaires des aéroports marocains (Open-Meteo)"
+        columns:
+          - name: airport_icao
+            description: "Code ICAO de l'aéroport marocain"
+            tests:
+              - not_null
+              - accepted_values:
+                  values: ['GMMN', 'GMMX', 'GMME', 'GMAD', 'GMTT']
+          - name: timestamp_utc
+            description: "Horodatage UTC de l'observation météo"
+            tests:
+              - not_null

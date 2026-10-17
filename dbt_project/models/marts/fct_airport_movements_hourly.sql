@@ -50,7 +50,7 @@ aggregated as (
         count(distinct case when computed_flight_phase = 'landing' then icao24 end) as estimated_landings,
         count(distinct case when computed_flight_phase = 'approach' then icao24 end) as approaches_detected,
         count(distinct case when computed_flight_phase = 'on_ground' then icao24 end) as surface_movements,
-        round(avg(distance_to_airport_km), 2) as avg_distance_km,
+        round(cast(avg(distance_to_airport_km) as numeric), 2) as avg_distance_km,
         current_timestamp as updated_at
     from joined
     group by

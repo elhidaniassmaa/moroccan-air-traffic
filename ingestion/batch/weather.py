@@ -246,6 +246,88 @@ def write_parquet(rows: list[dict[str, Any]], output_path: Path) -> None:
         )
 
 
+def write_postgres(rows: list[dict[str, Any]]) -> None:
+    """Insère ou met à jour les données météo dans PostgreSQL Warehouse (raw_weather)."""
+    if not rows:
+        return
+
+    host = os.getenv("WAREHOUSE_HOST", "warehouse")
+    port = os.getenv("WAREHOUSE_PORT", "5432")
+    db = os.getenv("WAREHOUSE_DB", "flights_dw")
+    user = os.getenv("WAREHOUSE_USER", "flights_user")
+    password = os.getenv("WAREHOUSE_PASSWORD", "flights_password_dev")
+
+    try:
+        import psycopg2
+        from psycopg2.extras import execute_batch
+
+        conn = psycopg2.connect(
+            host=host,
+            port=int(port),
+            dbname=db,
+            user=user,
+            password=password,
+            connect_timeout=10,
+        )
+        cur = conn.cursor()
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS raw_weather (
+                airport_icao VARCHAR(10),
+                airport_iata VARCHAR(10),
+                timestamp_utc TIMESTAMP,
+                date DATE,
+                hour INTEGER,
+                latitude DOUBLE PRECISION,
+                longitude DOUBLE PRECISION,
+                elevation_m DOUBLE PRECISION,
+                temperature_2m DOUBLE PRECISION,
+                apparent_temperature DOUBLE PRECISION,
+                precipitation DOUBLE PRECISION,
+                rain DOUBLE PRECISION,
+                wind_speed_10m DOUBLE PRECISION,
+                wind_gusts_10m DOUBLE PRECISION,
+                wind_direction_10m DOUBLE PRECISION,
+                visibility DOUBLE PRECISION,
+                cloud_cover DOUBLE PRECISION,
+                relative_humidity_2m DOUBLE PRECISION,
+                pressure_msl DOUBLE PRECISION,
+                PRIMARY KEY (airport_icao, timestamp_utc)
+            );
+        """)
+
+        insert_sql = """
+            INSERT INTO raw_weather (
+                airport_icao, airport_iata, timestamp_utc, date, hour,
+                latitude, longitude, elevation_m, temperature_2m, apparent_temperature,
+                precipitation, rain, wind_speed_10m, wind_gusts_10m, wind_direction_10m,
+                visibility, cloud_cover, relative_humidity_2m, pressure_msl
+            ) VALUES (
+                %(airport_icao)s, %(airport_iata)s, %(timestamp_utc)s, %(date)s, %(hour)s,
+                %(latitude)s, %(longitude)s, %(elevation_m)s, %(temperature_2m)s, %(apparent_temperature)s,
+                %(precipitation)s, %(rain)s, %(wind_speed_10m)s, %(wind_gusts_10m)s, %(wind_direction_10m)s,
+                %(visibility)s, %(cloud_cover)s, %(relative_humidity_2m)s, %(pressure_msl)s
+            ) ON CONFLICT (airport_icao, timestamp_utc) DO UPDATE SET
+                temperature_2m = EXCLUDED.temperature_2m,
+                apparent_temperature = EXCLUDED.apparent_temperature,
+                precipitation = EXCLUDED.precipitation,
+                rain = EXCLUDED.rain,
+                wind_speed_10m = EXCLUDED.wind_speed_10m,
+                wind_gusts_10m = EXCLUDED.wind_gusts_10m,
+                wind_direction_10m = EXCLUDED.wind_direction_10m,
+                visibility = EXCLUDED.visibility,
+                cloud_cover = EXCLUDED.cloud_cover,
+                relative_humidity_2m = EXCLUDED.relative_humidity_2m,
+                pressure_msl = EXCLUDED.pressure_msl;
+        """
+        execute_batch(cur, insert_sql, rows)
+        conn.commit()
+        cur.close()
+        conn.close()
+        logger.info("Wrote %d rows to PostgreSQL raw_weather", len(rows))
+    except Exception as e:
+        logger.warning("Could not write weather to PostgreSQL: %s", e)
+
+
 # ─────────────────────────────────────────────────────────────
 # Orchestration
 # ─────────────────────────────────────────────────────────────
@@ -316,6 +398,7 @@ def ingest_weather(
                     write_parquet(date_rows, output_path)
                     total_rows += len(date_rows)
 
+                write_postgres(rows)
                 results[icao_code] = total_rows
                 logger.info(
                     "Airport %s (%s): ingested %d rows across %d dates",

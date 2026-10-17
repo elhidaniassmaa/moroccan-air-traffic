@@ -1,25 +1,46 @@
-# ─────────────────────────────────────────────────────────────
-# Dockerfile for Spark Streaming (Bronze & Silver)
-# ─────────────────────────────────────────────────────────────
-FROM bitnami/spark:3.5.1
+# ─────────────────────────────────────────────────────────────────────────────
+# Dockerfile pour les jobs Spark Structured Streaming (Bronze & Silver)
+# + job de chargement Silver -> PostgreSQL (JDBC)
+#
+# Image de base : apache/spark:3.5.1-python3
+#   - SPARK_HOME = /opt/spark
+#   - spark-submit disponible dans /opt/spark/bin/spark-submit
+#   - Python 3 disponible
+#
+# Packages Maven embarqués au build (évite le téléchargement au runtime) :
+#   - spark-sql-kafka-0-10_2.12:3.5.1  → connecteur Kafka pour Spark
+#   - delta-spark_2.12:3.1.0           → Delta Lake (format Bronze/Silver)
+#   - postgresql:42.7.3                → driver JDBC pour charger Silver → PG
+# ─────────────────────────────────────────────────────────────────────────────
+FROM apache/spark:3.5.1-python3
 
 USER root
 
 WORKDIR /app
 
-# Install python dependencies for streaming helpers
+# ── Dépendances Python ────────────────────────────────────────────────────────
 COPY requirements-streaming.txt .
 RUN pip install --no-cache-dir -r requirements-streaming.txt
 
-# Download Maven packages needed by Spark Structured Streaming
-# Aligned versions:
-# - PySpark 3.5.1
-# - spark-sql-kafka-0-10_2.12:3.5.1
-# - delta-spark_2.12:3.1.0
-ENV SPARK_PACKAGES="org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.1,io.delta:delta-spark_2.12:3.1.0"
+# ── Pré-téléchargement des JARs Maven au moment du build ─────────────────────
+# On lance un spark-submit factice pour forcer le téléchargement des packages
+# et les mettre en cache dans /root/.ivy2 (inclus dans l'image).
+ENV SPARK_PACKAGES="org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.1,io.delta:delta-spark_2.12:3.1.0,org.postgresql:postgresql:42.7.3"
 
+RUN /opt/spark/bin/spark-submit \
+      --packages "${SPARK_PACKAGES}" \
+      --conf spark.jars.ivy=/opt/spark/.ivy2 \
+      /dev/null 2>/dev/null || true
+
+# ── Code source ───────────────────────────────────────────────────────────────
 COPY streaming/ ./streaming/
 
-USER 1001
+# ── Permissions ───────────────────────────────────────────────────────────────
+RUN mkdir -p /opt/spark/.ivy2 && chmod -R 777 /opt/spark/.ivy2
+USER root
 
-ENTRYPOINT ["spark-submit", "--packages", "org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.1,io.delta:delta-spark_2.12:3.1.0"]
+# ── Point d'entrée : spark-submit avec chemin absolu et packages ─────────────
+# Le fichier Python à exécuter est passé via `command:` dans docker-compose.yml
+ENTRYPOINT ["/opt/spark/bin/spark-submit", \
+            "--packages", "org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.1,io.delta:delta-spark_2.12:3.1.0,org.postgresql:postgresql:42.7.3", \
+            "--conf", "spark.jars.ivy=/opt/spark/.ivy2"]

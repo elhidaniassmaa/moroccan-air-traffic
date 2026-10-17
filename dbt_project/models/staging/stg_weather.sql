@@ -1,10 +1,10 @@
 -- Staging model for weather data
--- Uses raw_weather parquet files or mock fallback for CI/demo environments
+-- Lit la table raw_weather depuis PostgreSQL Warehouse (ou fixture pour CI)
 with source as (
     {% if target.name == 'ci' %}
     select * from {{ ref('raw_weather_fixture') }}
     {% else %}
-    select * from read_parquet('{{ env_var("WEATHER_PARQUET_GLOB", "../data/lake/raw/weather/**/*.parquet") }}')
+    select * from {{ source('warehouse_raw', 'raw_weather') }}
     {% endif %}
 ),
 
@@ -15,18 +15,18 @@ cleaned as (
         cast(timestamp_utc as timestamp) as observation_ts,
         cast(date as date) as observation_date,
         cast(hour as integer) as observation_hour,
-        cast(temperature_2m as double) as temp_celsius,
-        cast(apparent_temperature as double) as apparent_temp_celsius,
-        cast(precipitation as double) as precipitation_mm,
-        cast(rain as double) as rain_mm,
-        cast(wind_speed_10m as double) as wind_speed_kmh,
-        cast(wind_gusts_10m as double) as wind_gusts_kmh,
-        cast(wind_direction_10m as double) as wind_direction_deg,
-        cast(visibility as double) as visibility_m,
-        round(cast(visibility as double) / 1000.0, 2) as visibility_km,
-        cast(cloud_cover as double) as cloud_cover_pct,
-        cast(relative_humidity_2m as double) as humidity_pct,
-        cast(pressure_msl as double) as pressure_hpa
+        cast(temperature_2m as double precision) as temp_celsius,
+        cast(apparent_temperature as double precision) as apparent_temp_celsius,
+        cast(precipitation as double precision) as precipitation_mm,
+        cast(rain as double precision) as rain_mm,
+        cast(wind_speed_10m as double precision) as wind_speed_kmh,
+        cast(wind_gusts_10m as double precision) as wind_gusts_kmh,
+        cast(wind_direction_10m as double precision) as wind_direction_deg,
+        cast(visibility as double precision) as visibility_m,
+        round(cast(visibility / 1000.0 as numeric), 2) as visibility_km,
+        cast(cloud_cover as double precision) as cloud_cover_pct,
+        cast(relative_humidity_2m as double precision) as humidity_pct,
+        cast(pressure_msl as double precision) as pressure_hpa
     from source
 ),
 
