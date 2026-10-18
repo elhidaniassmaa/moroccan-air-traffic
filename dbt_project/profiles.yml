@@ -1,9 +1,6 @@
 moroccan_air_traffic:
   target: dev
   outputs:
-    # ── Développement local et conteneur Docker ───────────────
-    # Les valeurs par défaut sont celles du réseau Docker (hôte "warehouse").
-    # Depuis Windows : WAREHOUSE_HOST=localhost et WAREHOUSE_PORT=5433.
     dev:
       type: postgres
       host: "{{ env_var('WAREHOUSE_HOST', 'warehouse') }}"
@@ -13,7 +10,7 @@ moroccan_air_traffic:
       dbname: "{{ env_var('WAREHOUSE_DB', 'flights_dw') }}"
       schema: public
       threads: 4
-
+    # … ci and snowflake blocks unchanged …
     # ── CI (GitHub Actions) ───────────────────────────────────
     # Aucune valeur par défaut pour le mot de passe : si la variable
     # manque, dbt s'arrête avec une erreur claire.

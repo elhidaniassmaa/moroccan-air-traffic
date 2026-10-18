@@ -2,6 +2,7 @@ name: moroccan-air-traffic
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Ancre YAML partagée par les trois services Airflow (webserver, scheduler, init)
+# Les deux clés secrètes sont OBLIGATOIRES : elles doivent être définies dans .env
 # ─────────────────────────────────────────────────────────────────────────────
 x-airflow-common: &airflow-common
   build:
@@ -11,10 +12,10 @@ x-airflow-common: &airflow-common
   environment:
     AIRFLOW__CORE__EXECUTOR: LocalExecutor
     AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
-    AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW__CORE__FERNET_KEY}
+    AIRFLOW__CORE__FERNET_KEY: "${AIRFLOW__CORE__FERNET_KEY:?Set AIRFLOW__CORE__FERNET_KEY in .env}"
     AIRFLOW__CORE__LOAD_EXAMPLES: "false"
     AIRFLOW__CORE__LOGGING_LEVEL: INFO
-    AIRFLOW__WEBSERVER__SECRET_KEY: ${AIRFLOW__WEBSERVER__SECRET_KEY}
+    AIRFLOW__WEBSERVER__SECRET_KEY: "${AIRFLOW__WEBSERVER__SECRET_KEY:?Set AIRFLOW__WEBSERVER__SECRET_KEY in .env}"
     PYTHONPATH: /opt/airflow
   volumes:
     - ./orchestration/dags:/opt/airflow/dags
@@ -59,8 +60,8 @@ services:
       zookeeper:
         condition: service_healthy
     ports:
-      - "9092:9092"   # interne (entre containers)
-      - "19092:19092" # externe (hôte Windows -> kafka)
+      - "9092:9092"   # listener interne (entre containers)
+      - "19092:19092" # listener externe (hôte Windows -> kafka)
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
@@ -85,7 +86,7 @@ services:
       start_period: 30s
     restart: unless-stopped
 
-  # Kafka UI (remplace Redpanda Console) — port 8080
+  # Kafka UI — http://localhost:8080
   kafka-ui:
     image: provectuslabs/kafka-ui:v0.7.2
     container_name: kafka-ui
@@ -192,7 +193,7 @@ services:
   # COUCHE STOCKAGE : PostgreSQL (métadonnées Airflow) + Warehouse (analytique)
   # ─────────────────────────────────────────────────────────────────────────
 
-  # PostgreSQL pour Airflow uniquement (métadonnées, state des DAGs)
+  # PostgreSQL pour Airflow uniquement (métadonnées, état des DAGs)
   postgres:
     image: postgres:15-alpine
     container_name: postgres
@@ -210,20 +211,21 @@ services:
       start_period: 10s
     restart: always
 
-  # PostgreSQL data warehouse (dbt Gold — séparé d'Airflow)
+  # PostgreSQL data warehouse (dbt Gold, séparé d'Airflow)
+  # Depuis Windows : localhost:5433
   warehouse:
     image: postgres:15-alpine
     container_name: warehouse
     environment:
       POSTGRES_USER: ${WAREHOUSE_USER:-flights_user}
-      POSTGRES_PASSWORD: ${WAREHOUSE_PASSWORD:-flights_pass}
+      POSTGRES_PASSWORD: ${WAREHOUSE_PASSWORD:-flights_password_dev}
       POSTGRES_DB: ${WAREHOUSE_DB:-flights_dw}
     ports:
       - "5433:5432"
     volumes:
       - warehouse_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD", "pg_isready", "-U", "${WAREHOUSE_USER:-flights_user}"]
+      test: ["CMD-SHELL", "pg_isready -U ${WAREHOUSE_USER:-flights_user} -d ${WAREHOUSE_DB:-flights_dw}"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -251,7 +253,7 @@ services:
           --email admin@moroccan-traffic.ma || true
     restart: "no"
 
-  # Interface web Airflow — http://localhost:8085 (admin/admin)
+  # Interface web Airflow : http://localhost:8085 (admin / admin)
   airflow-webserver:
     <<: *airflow-common
     container_name: airflow-webserver
@@ -290,7 +292,7 @@ services:
       WAREHOUSE_PORT: "5432"
       WAREHOUSE_DB: ${WAREHOUSE_DB:-flights_dw}
       WAREHOUSE_USER: ${WAREHOUSE_USER:-flights_user}
-      WAREHOUSE_PASSWORD: ${WAREHOUSE_PASSWORD:-flights_pass}
+      WAREHOUSE_PASSWORD: ${WAREHOUSE_PASSWORD:-flights_password_dev}
     command: >
       bash -c "pip install --no-cache-dir streamlit pydeck plotly pandas numpy sqlalchemy psycopg2-binary &&
                streamlit run dashboard/app.py --server.port 8501 --server.address 0.0.0.0"
