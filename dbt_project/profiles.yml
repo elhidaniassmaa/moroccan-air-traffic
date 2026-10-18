@@ -1,6 +1,9 @@
 moroccan_air_traffic:
   target: dev
   outputs:
+    # ── Développement local et conteneur Docker ───────────────
+    # Les valeurs par défaut sont celles du réseau Docker (hôte "warehouse").
+    # Depuis Windows : WAREHOUSE_HOST=localhost et WAREHOUSE_PORT=5433.
     dev:
       type: postgres
       host: "{{ env_var('WAREHOUSE_HOST', 'warehouse') }}"
@@ -11,27 +14,21 @@ moroccan_air_traffic:
       schema: public
       threads: 4
 
+    # ── CI (GitHub Actions) ───────────────────────────────────
+    # Aucune valeur par défaut pour le mot de passe : si la variable
+    # manque, dbt s'arrête avec une erreur claire.
     ci:
       type: postgres
-      host: "{{ env_var('WAREHOUSE_HOST', 'warehouse') }}"
+      host: "{{ env_var('WAREHOUSE_HOST', 'localhost') }}"
       user: "{{ env_var('WAREHOUSE_USER', 'flights_user') }}"
-      password: "{{ env_var('WAREHOUSE_PASSWORD', 'flights_password_dev') }}"
-      port: "{{ env_var('WAREHOUSE_PORT', '5432') | int }}"
+      password: "{{ env_var('WAREHOUSE_PASSWORD') }}"
+      port: "{{ env_var('WAREHOUSE_PORT', '5432') | as_number }}"
       dbname: "{{ env_var('WAREHOUSE_DB', 'flights_dw') }}"
       schema: public
       threads: 2
 
-    prod:
-      type: postgres
-      host: "{{ env_var('WAREHOUSE_HOST', 'warehouse') }}"
-      user: "{{ env_var('WAREHOUSE_USER', 'flights_user') }}"
-      password: "{{ env_var('WAREHOUSE_PASSWORD', 'flights_password_dev') }}"
-      port: "{{ env_var('WAREHOUSE_PORT', '5432') | int }}"
-      dbname: "{{ env_var('WAREHOUSE_DB', 'flights_dw') }}"
-      schema: public
-      threads: 4
-
-    # ── Phase 2 : Cible Snowflake (portabilité cloud) ────────────────────────
+    # ── Cible cloud Snowflake (portabilité) ───────────────────
+    # Nécessite les variables SNOWFLAKE_* ; sans elles, la connexion échoue.
     snowflake:
       type: snowflake
       account: "{{ env_var('SNOWFLAKE_ACCOUNT', '') }}"
@@ -42,4 +39,4 @@ moroccan_air_traffic:
       warehouse: "{{ env_var('SNOWFLAKE_WAREHOUSE', 'COMPUTE_WH') }}"
       schema: "{{ env_var('SNOWFLAKE_SCHEMA', 'GOLD') }}"
       threads: 4
-      client_session_keep_alive: False
+      client_session_keep_alive: false

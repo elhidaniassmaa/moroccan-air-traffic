@@ -2,13 +2,41 @@ name: CI Quality & Data Tests
 
 on:
   push:
-    branches: [ master, main, "feat/**" ]
+    branches: [ master ]
   pull_request:
-    branches: [ master, main ]
+    branches: [ master ]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DBT_PROFILES_DIR: dbt_project
+  WAREHOUSE_HOST: localhost
+  WAREHOUSE_PORT: "5432"
+  WAREHOUSE_USER: flights_user
+  WAREHOUSE_PASSWORD: ci_password_only
+  WAREHOUSE_DB: flights_dw
 
 jobs:
   lint-and-test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: flights_user
+          POSTGRES_PASSWORD: ci_password_only
+          POSTGRES_DB: flights_dw
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U flights_user -d flights_dw"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -45,8 +73,8 @@ jobs:
           python scripts/measure_metrics.py
 
       - name: Run dbt CI build on fixtures (isolated, zero-cloud)
+        working-directory: dbt_project
         run: |
-          cd dbt_project
-          dbt deps
+          dbt deps --profiles-dir .
           dbt seed --target ci --profiles-dir .
           dbt build --target ci --select tag:ci --profiles-dir .
