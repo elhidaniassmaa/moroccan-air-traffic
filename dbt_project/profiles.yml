@@ -3,17 +3,17 @@ moroccan_air_traffic:
   outputs:
     dev:
       type: postgres
-      host: "{{ env_var('WAREHOUSE_HOST', 'localhost') }}"
+      host: "{{ env_var('WAREHOUSE_HOST', 'warehouse') }}"
       user: "{{ env_var('WAREHOUSE_USER', 'flights_user') }}"
       password: "{{ env_var('WAREHOUSE_PASSWORD', 'flights_password_dev') }}"
-      port: "{{ env_var('WAREHOUSE_PORT', '5432') | int }}"
+      port: "{{ env_var('WAREHOUSE_PORT', '5432') | as_number }}"
       dbname: "{{ env_var('WAREHOUSE_DB', 'flights_dw') }}"
       schema: public
       threads: 4
 
     ci:
       type: postgres
-      host: "{{ env_var('WAREHOUSE_HOST', 'localhost') }}"
+      host: "{{ env_var('WAREHOUSE_HOST', 'warehouse') }}"
       user: "{{ env_var('WAREHOUSE_USER', 'flights_user') }}"
       password: "{{ env_var('WAREHOUSE_PASSWORD', 'flights_password_dev') }}"
       port: "{{ env_var('WAREHOUSE_PORT', '5432') | int }}"
