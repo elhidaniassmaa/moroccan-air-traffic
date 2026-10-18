@@ -137,6 +137,13 @@ docker compose exec airflow-webserver dbt run --project-dir /opt/airflow/dbt_pro
 docker compose exec airflow-webserver dbt test --project-dir /opt/airflow/dbt_project --profiles-dir /opt/airflow/dbt_project
 ```
 
+To verify dbt directly from Windows PowerShell (from the parent `Projet_2` directory), point it to the repository's project and profile. This avoids using an unrelated global `~/.dbt/profiles.yml`:
+```powershell
+$env:WAREHOUSE_HOST = "localhost"
+$env:WAREHOUSE_PORT = "5433"
+dbt debug --project-dir .\moroccan-air-traffic\dbt_project --profiles-dir .\moroccan-air-traffic\dbt_project
+```
+
 ### 4. Run Test Suite
 ```bash
 python -m pytest tests/
